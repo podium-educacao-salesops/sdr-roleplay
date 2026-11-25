@@ -286,7 +286,7 @@ const EVENTOS = {
     publico: "evento aberto, para alunos e não alunos",
     gancho: "convite para o Summit; antes de seguir, a executiva pergunta se a pessoa já é aluna e adapta a conversa",
     promessa: "pensar o negócio olhando a barbearia de fora, longe da cadeira e do telefone; gestão de pessoas, captação de clientes e aumento de faturamento; sair com o primeiro passo decidido para colocar em prática na semana seguinte",
-    regra: "Perguntou se a pessoa já é aluna e adaptou a conversa a isso",
+    regra: "Na primeira fala disse quem é, que evento é e por que ligou, SEM papo antes do motivo; depois perguntou se a pessoa já conhece a Podium e adaptou a conversa",
     mentores: null,
   },
   ppb: {
@@ -295,7 +295,7 @@ const EVENTOS = {
     publico: "só NÃO alunos, abordagem de lead frio a partir de uma lista de barbearias da região",
     gancho: "a barbearia se destacou no levantamento das barbearias da região, pela nota e pelo número de avaliações no Google",
     promessa: "pensar o negócio olhando a barbearia de fora, longe da cadeira e do telefone; gestão de pessoas, captação de clientes e aumento de faturamento; sair com o primeiro passo decidido para colocar em prática na semana seguinte",
-    regra: "NÃO tratou o lead como aluno e NÃO citou o sistema Cash Barber: ele nunca comprou nada da Podium",
+    regra: "Ligação fria: na primeira fala disse quem é, por que ligou para ELE (a barbearia se destacou no Google) e pediu um tempo curto, SEM abrir com papo do tipo \"como está o movimento?\". E NÃO tratou o lead como aluno nem citou o sistema Cash Barber",
     mentores: "Rafa Barber, Davidson (Barbeiro Evolução) e Will Vences",
   },
   cash: {
@@ -693,7 +693,9 @@ function buildSystem(p) {
     "- Uma executiva da Podium Educação está te ligando para te convidar para um evento presencial (" + ev.label + ").\n" +
     "- Você NÃO sabe os detalhes do evento: nem datas, nem programação, nem quem vai palestrar. Tudo isso você só sabe se ela contar.\n" +
     (p.evento === "ppb"
-      ? "- É uma ligação fria: você não esperava o contato e não conhece bem a Podium. Se ela falar com você como se você fosse aluno ou cliente do sistema, estranhe: \"aluno? nunca contratei nada de vocês\".\n"
+      ? "- É uma ligação fria: você não esperava o contato, não conhece a Podium e está no meio do atendimento. Se ela falar com você como se você fosse aluno ou cliente do sistema, estranhe: \"aluno? nunca contratei nada de vocês\".\n" +
+        "- Os primeiros segundos decidem se você continua na linha. Se ela abrir com papo (\"como está o movimento?\", \"muita correria hoje?\") antes de dizer quem é e por que ligou, desconfie: \"quem fala?\", \"é venda?\" e, no nível difícil, \"tô atendendo, depois a gente fala\". " +
+        "Se logo na primeira fala ela disser quem é, por que ligou para VOCÊ e pedir pouco tempo, você dá esse tempo, ainda que meio desconfiado.\n"
       : p.evento === "cash"
       ? "- Você é aluno e reconhece a Podium e o Lincoln. Se ela não citar a sua implementação, você não entende de onde veio o convite.\n"
       : "- Se ela não perguntar se você já é aluno, não diga por conta própria.\n") +
@@ -928,9 +930,9 @@ async function getGreeting() {
 // Regua do script oficial da equipe de eventos (9 etapas + postura).
 // Valores ficam fora: so se avalia se a executiva segurou o preco.
 const CHECKLIST_SCRIPT = [
-  { grupo: "1. Rapport e conexão", peso: 10, chave: "rapport", itens: [
-    ["rap_identificou", "Disse o próprio nome e de qual equipe fala (Podium Educação, equipe do Lincoln ou do Rafa, conforme o evento)"],
-    ["rap_conexao",     "Fez um comentário ou pergunta pessoal (cidade, barbearia, rotina, correria do dia) e ESCUTOU a resposta antes de entrar no evento"],
+  { grupo: "1. Abertura e conexão", peso: 10, chave: "rapport", itens: [
+    ["rap_identificou", "Logo na primeira fala disse o próprio nome, de onde fala e o motivo da ligação, sem enrolar antes do motivo"],
+    ["rap_conexao",     "Ganhou a conversa antes de apresentar. Lead frio (Podium pelo Brasil, Summit para quem não conhece a Podium): pediu um tempo curto e concreto (\"dois minutinhos\") e, se o cliente estava ocupado, marcou horário em vez de despejar o evento. Aluno (Cash Experience): fez um comentário pessoal e ESCUTOU a resposta"],
     ["rap_sem_desculpa","NÃO pediu desculpa por ligar nem usou tom de quem está atrapalhando"],
   ]},
   { grupo: "2. Gancho certo do evento", peso: 10, chave: "gancho", itens: [
