@@ -10,14 +10,14 @@ Treino de ligação por voz. A pessoa do comercial (executivo de contas / SDR) f
 
 | O quê | Endereço | Hospedagem | Conta | Banco |
 |---|---|---|---|---|
-| Simulador comercial | https://daianesilvasvc-afk.github.io/sdr-roleplay/ | GitHub Pages (branch `main`, raiz) | GitHub `daianesilvasvc-afk` (pessoal da Daiane) | — |
-| Simulador de Eventos | https://daianesilvasvc-afk.github.io/sdr-roleplay/eventos.html | idem | idem | — |
-| Painel da gestão (comercial) | https://daianesilvasvc-afk.github.io/sdr-roleplay/historico.html | idem | idem | — |
-| Painel da gestão (eventos) | https://daianesilvasvc-afk.github.io/sdr-roleplay/historico-eventos.html | idem | idem | — |
+| Simulador comercial | https://podium-educacao-salesops.github.io/sdr-roleplay/ | GitHub Pages (branch `main`, raiz) | GitHub `podium-educacao-salesops` | — |
+| Simulador de Eventos | https://podium-educacao-salesops.github.io/sdr-roleplay/eventos.html | idem | idem | — |
+| Painel da gestão (comercial) | https://podium-educacao-salesops.github.io/sdr-roleplay/historico.html | idem | idem | — |
+| Painel da gestão (eventos) | https://podium-educacao-salesops.github.io/sdr-roleplay/historico-eventos.html | idem | idem | — |
 | Backend (IA + gravação) | https://withered-wildflower-db78.daiane-silvasvc.workers.dev | Cloudflare Workers | Cloudflare `daiane-silvasvc` (pessoal) | D1 `sdr_roleplay_db` |
 
-Repositório deste site: https://github.com/daianesilvasvc-afk/sdr-roleplay
-Repositório do backend: https://github.com/daianesilvasvc-afk/sdr-roleplay-worker (tem README próprio).
+Repositório deste site: https://github.com/podium-educacao-salesops/sdr-roleplay
+Repositório do backend: https://github.com/podium-educacao-salesops/sdr-roleplay-worker (tem README próprio).
 
 ## Como funciona
 
@@ -85,7 +85,7 @@ Nenhuma. Nada roda sozinho; tudo acontece quando alguém usa a página.
 
 ## Pendências da passagem
 
-- [ ] Transferir o repositório para a organização da empresa no GitHub e reativar o GitHub Pages lá (Settings → Pages → branch `main`, pasta raiz).
+- [x] Repositório transferido para `podium-educacao-salesops` (25/11/2026).
 - [ ] O endereço vai mudar para `https://<org>.github.io/sdr-roleplay/`. Atualizar os links absolutos no `onboarding-sdr/index.html` e avisar o time. Não contar com redirecionamento automático do endereço antigo do Pages.
 - [ ] Na mudança de endereço, a fila local de resultados não enviados (`roleplay_pendentes`) fica no endereço antigo e se perde. Impacto pequeno.
 - [ ] Transferir o Worker e o banco D1 da conta Cloudflare pessoal `daiane-silvasvc` (ver pendências no README do `sdr-roleplay-worker`). Se o endereço do Worker mudar, trocar `API_URL` nos quatro HTML.
