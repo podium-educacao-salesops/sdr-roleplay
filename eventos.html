@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Simulador SDR — Modo Áudio</title>
+<title>Simulador de Eventos</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -162,86 +162,88 @@
 <body>
 <div id="app">
 
-  <!-- TELA 1: escolha de dificuldade -->
+  <!-- TELA 1: escolha do evento e da dificuldade -->
   <div id="difficulty-screen">
+    <style>
+      .ev-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; width:100%; }
+      .ev-card { padding:12px; border-radius:10px; border:1.5px solid #2a2a2a; background:#1a1a1a; cursor:pointer; }
+      .ev-card.sel { border-color:#d7ab5c; background:#2a2310; }
+      .ev-name { font-weight:600; font-size:14px; color:#e8e8e8; }
+      .ev-desc { font-size:12px; color:#9a9a9a; margin-top:4px; line-height:1.4; }
+      .step-label { font-size:12px; color:#9a9a9a; text-transform:uppercase; letter-spacing:.06em; width:100%; }
+    </style>
     <div>
       <div class="screen-title">Simulador de Eventos — Modo Áudio</div>
-      <div class="screen-sub">Digite seu nome, escolha o evento e o nível para iniciar a sessão.</div>
+      <div class="screen-sub">Treino de abordagem e discurso para convidar donos de barbearia para os eventos. Sem valores.</div>
     </div>
 
     <input id="sdr-name-input" type="text" placeholder="Seu nome" autocomplete="off"
       style="width:100%;padding:12px 14px;font-size:14px;border-radius:10px;border:1.5px solid #2a2a2a;background:#1a1a1a;color:#e8e8e8;font-family:inherit;"
       oninput="onNameInput()">
 
-    <div class="diff-cards" style="margin-bottom:6px">
-      <div class="diff-card" data-ev="ppb" onclick="selectEvento(this)">
-        <div class="diff-icon">📍</div>
-        <div class="diff-info">
-          <div class="diff-name">Podium pelo Brasil</div>
-          <div class="diff-desc">Só quem NÃO é aluno. Lead frio, da lista de barbearias da região — o gancho é o destaque no Google.</div>
-        </div>
+    <div class="step-label">1. Evento</div>
+    <div class="ev-cards">
+      <div class="ev-card" data-ev="summit" onclick="selectEvent(this)">
+        <div class="ev-name">Summit</div>
+        <div class="ev-desc">Aberto a alunos e não alunos. Pergunte se já é aluno.</div>
       </div>
-      <div class="diff-card" data-ev="cash" onclick="selectEvento(this)">
-        <div class="diff-icon">🏆</div>
-        <div class="diff-info">
-          <div class="diff-name">Cash Experience</div>
-          <div class="diff-desc">Só alunos que concluíram a implementação do Cash Barber. Parabenizar é obrigatório.</div>
-        </div>
+      <div class="ev-card" data-ev="ppb" onclick="selectEvent(this)">
+        <div class="ev-name">Podium pelo Brasil</div>
+        <div class="ev-desc">Só não alunos. Lead frio da lista da região.</div>
       </div>
-      <div class="diff-card" data-ev="summit" onclick="selectEvento(this)">
-        <div class="diff-icon">🎤</div>
-        <div class="diff-info">
-          <div class="diff-name">Summit</div>
-          <div class="diff-desc">Aberto: pode cair aluno ou não aluno. Você descobre na ligação e adapta.</div>
-        </div>
+      <div class="ev-card" data-ev="cash" onclick="selectEvent(this)">
+        <div class="ev-name">Cash Experience</div>
+        <div class="ev-desc">Só alunos que concluíram a implementação.</div>
+      </div>
+      <div class="ev-card" data-ev="aleatorio" onclick="selectEvent(this)">
+        <div class="ev-name">🎲 Sortear</div>
+        <div class="ev-desc">Um dos três eventos a cada sessão.</div>
       </div>
     </div>
 
+    <div class="step-label">2. Nível</div>
     <div class="diff-cards">
       <div class="diff-card" data-level="facil" onclick="selectDiff(this)">
         <div class="diff-icon">😊</div>
         <div class="diff-info">
           <div class="diff-name">Fácil</div>
-          <div class="diff-desc">Barbeiro receptivo e aberto. Poucas objeções. Ideal para SDRs em onboarding ou primeiros roleplays.</div>
+          <div class="diff-desc">Dono receptivo, decide rápido ou só precisa falar com a esposa.</div>
         </div>
         <div class="diff-badge" style="background:#0a2a0a;color:#5cb85c">Fácil</div>
       </div>
-
       <div class="diff-card" data-level="medio" onclick="selectDiff(this)">
         <div class="diff-icon">🤔</div>
         <div class="diff-info">
           <div class="diff-name">Médio</div>
-          <div class="diff-desc">1 a 2 objeções naturais (preço, tempo, contrato). Pode ser convencido com bons argumentos.</div>
+          <div class="diff-desc">Só abre o jogo com pergunta aberta. Objeções de agenda, sócio, mentoria. Às vezes quem atende não é o dono.</div>
         </div>
         <div class="diff-badge" style="background:#2a1f00;color:#f5c518">Médio</div>
       </div>
-
       <div class="diff-card" data-level="dificil" onclick="selectDiff(this)">
         <div class="diff-icon">😤</div>
         <div class="diff-info">
           <div class="diff-name">Difícil</div>
-          <div class="diff-desc">Cético, já se frustrou com outro sistema. Questiona tudo e exige provas. Para SDRs com experiência.</div>
+          <div class="diff-desc">Desconfiado, sem tempo ou exigente. Corta monólogo e não aceita contorno genérico.</div>
         </div>
         <div class="diff-badge" style="background:#2a0a0a;color:#f87171">Difícil</div>
       </div>
-
       <div class="diff-card" data-level="aleatorio" onclick="selectDiff(this)">
         <div class="diff-icon">🎲</div>
         <div class="diff-info">
           <div class="diff-name">Aleatório</div>
-          <div class="diff-desc">Nível e perfil do barbeiro sorteados a cada sessão. Boa opção para treino variado.</div>
+          <div class="diff-desc">Nível e perfil sorteados a cada sessão.</div>
         </div>
         <div class="diff-badge" style="background:#1a103a;color:#a78bfa">Aleatório</div>
       </div>
     </div>
 
-    <button id="start-btn" onclick="startSession()">Escolha um nível para começar</button>
+    <button id="start-btn" onclick="startSession()">Escolha o evento e o nível para começar</button>
   </div>
 
   <!-- TELA 2: sessão de roleplay -->
   <div id="session-screen">
-    <h2>Simulador SDR — Modo Áudio</h2>
-    <p class="subtitle">Toque para falar · Toque de novo para enviar · O barbeiro responde em voz</p>
+    <h2>Simulador de Eventos — Modo Áudio</h2>
+    <p class="subtitle">Toque para falar · Toque de novo para enviar · O cliente responde em voz</p>
 
     <div id="persona-card">
       <div id="persona-avatar">--</div>
@@ -266,7 +268,7 @@
 
     <div id="actions">
       <button class="act-btn" id="end-btn" disabled>⏹ Encerrar e avaliar</button>
-      <button class="act-btn" id="back-btn" onclick="goBack()">↩ Trocar nível</button>
+      <button class="act-btn" id="back-btn" onclick="goBack()">↩ Trocar evento ou nível</button>
     </div>
 
     <div id="scorecard"></div>
@@ -275,161 +277,165 @@
 </div>
 
 <script>
-// Leads de eventos: continuam sendo donos de barbearia, mas aqui se vende
-// ingresso, não consultoria. O EVENTO define a relação dele com a Podium —
-// ppb é lead frio que nunca ouviu falar, cash é aluno que concluiu a
-// implementação, summit é aberto e pode ser um ou outro.
-const PERSONAS = {
+// Os tres eventos que a equipe vende. A persona e a avaliacao leem daqui o
+// publico, o gancho e a regra de abertura de cada um.
+const EVENTOS = {
+  summit: {
+    label: "Summit",
+    origem: "Summit · base e campanhas",
+    publico: "evento aberto, para alunos e não alunos",
+    gancho: "convite para o Summit; antes de seguir, a executiva pergunta se a pessoa já é aluna e adapta a conversa",
+    promessa: "pensar o negócio olhando a barbearia de fora, longe da cadeira e do telefone; gestão de pessoas, captação de clientes e aumento de faturamento; sair com o primeiro passo decidido para colocar em prática na semana seguinte",
+    regra: "Na primeira fala disse quem é, que evento é e por que ligou, SEM papo antes do motivo; depois perguntou se a pessoa já conhece a Podium e adaptou a conversa",
+    mentores: null,
+  },
   ppb: {
-    facil: [
-      { name:"Everaldo Pinho", initials:"EP", city:"Maringá", shop:"Pinho Barbearia", nota:"4,9", avaliacoes:"312",
-        desc:"Nunca ouviu falar da Podium, mas gosta de conversar · Perfil I", disc:"I", aluno:false,
-        contexto:"Dono há 4 anos, 3 barbeiros. LEAD FRIO: nunca ouviu falar da Podium. A barbearia tem nota 4,9 com 312 avaliações no Google. Está na cadeira quando o telefone toca.",
-        dor:"Não acha barbeiro bom; treina e o cara sai.",
-        objecoes:["Quem? Podium o quê?","Como você pegou meu número?","É venda? Quanto custa?"],
-        comportamento:"Simpático e curioso. Pergunta quem é a Podium logo de cara, mas escuta. Se o SDR disser quem é, por que ligou e pedir dois minutos, ele dá. Se o SDR começar com \"como tá o movimento?\" antes de dizer o motivo, você estranha e fica desconfiado. Perfil I: gosta de conversa, mas quer saber com quem fala."
-      },
-      { name:"Reginaldo Sá", initials:"RS", city:"Londrina", shop:"Sá Barber House", nota:"4,8", avaliacoes:"198",
-        desc:"Lead frio, quer faturar mais sem crescer a estrutura · Perfil D", disc:"D", aluno:false,
-        contexto:"Dono há 6 anos, 4 barbeiros. LEAD FRIO: não conhece a Podium. Nota 4,8 com 198 avaliações no Google.",
-        dor:"Quer faturar mais sem aumentar a estrutura; sente que chegou num teto.",
-        objecoes:["Tô atendendo, agora não dá","É venda? Quanto custa?"],
-        comportamento:"Objetivo e apressado. Diz que está atendendo na primeira fala. Se o SDR aceitar e marcar um horário para ligar de volta, você respeita e atende bem depois. Se ele tentar apresentar o evento correndo por cima, você corta. Perfil D: sem paciência para enrolação."
-      },
-    ],
-    medio: [
-      { name:"Cleiton Varela", initials:"CV", city:"Cascavel", shop:"Varela Barbearia", nota:"4,7", avaliacoes:"143",
-        desc:"Desconfia de como pegaram o número dele · Perfil C", disc:"C", aluno:false,
-        contexto:"Dono há 8 anos, 5 barbeiros, 2 unidades. LEAD FRIO. Nota 4,7 com 143 avaliações. Já recebeu muita ligação de vendedor e está cansado.",
-        dor:"Movimento caiu; barbearia nova no bairro brigando por preço.",
-        objecoes:["Como você pegou meu número?","Já vou em outro evento","Me manda no WhatsApp que eu vejo"],
-        comportamento:"Desconfiado e analítico. Pergunta de onde veio o número e espera resposta direta. Se o SDR enrolar, você encerra. Se ele disser que foi do perfil no Google pela nota, você aceita. Peça para mandar no WhatsApp pelo menos uma vez — se o SDR aceitar sem marcar dia e hora para retornar, encerre satisfeito, e isso é erro dele. Perfil C: quer coerência."
-      },
-      { name:"Juarez Bonfim", initials:"JB", city:"Ponta Grossa", shop:"Bonfim Cortes", nota:"5,0", avaliacoes:"87",
-        desc:"Acha que barbearia pequena não é público de evento · Perfil S", disc:"S", aluno:false,
-        contexto:"Dono há 3 anos, 1 barbeiro além dele. LEAD FRIO. Nota 5,0 com 87 avaliações no Google.",
-        dor:"Preso na cadeira e sem tempo de pensar no negócio.",
-        objecoes:["Minha barbearia é pequena, não é para mim","Preciso ver a agenda","Vou conversar com a minha esposa"],
-        comportamento:"Humilde e meio acanhado. Diz que a barbearia é pequena demais para esse tipo de encontro. Se o SDR acolher e devolver com pergunta sobre o que o impede de crescer, você abre. Se ele argumentar por cima sem ouvir, você se fecha. A esposa participa da gestão — se o SDR perguntar quem decide, diga que é com ela também. Perfil S: evita conflito."
-      },
-    ],
-    dificil: [
-      { name:"Adilson Trindade", initials:"AT", city:"Foz do Iguaçu", shop:"Trindade Barber Club", nota:"4,9", avaliacoes:"421",
-        desc:"Já faz mentoria e não quer misturar · Perfil C", disc:"C", aluno:false,
-        contexto:"Dono há 10 anos, 7 barbeiros, 2 unidades. LEAD FRIO. Nota 4,9 com 421 avaliações. Faz uma mentoria de gestão com outro profissional do mercado há 8 meses.",
-        dor:"Quer escalar para a terceira unidade e não consegue replicar o padrão.",
-        objecoes:["Já faço uma mentoria e não quero misturar","Já vou em outro evento","É para vender assinatura? Tem pegadinha?"],
-        comportamento:"Cético e bem informado. Cita a mentoria que já faz. Se o SDR falar mal do outro profissional ou disser que ele \"foi nosso aluno\", você se ofende e encerra. Se ele valorizar o investimento e mostrar que soma, você escuta. Pergunte se é para vender assinatura. Perfil C: testa o caráter de quem liga."
-      },
-      { name:"Nei Fontoura", initials:"NF", city:"Guarapuava", shop:"Fontoura Barbearia", nota:"4,6", avaliacoes:"76",
-        desc:"Corta a ligação antes de ouvir o motivo · Perfil D", disc:"D", aluno:false,
-        contexto:"Dono há 12 anos, 4 barbeiros. LEAD FRIO. Nota 4,6 com 76 avaliações. Recebe ligação de vendedor toda semana e perdeu a paciência.",
-        dor:"Equipe sem comprometimento; já perdeu três barbeiros no ano.",
-        objecoes:["Não tenho interesse","Tô atendendo","Me manda no WhatsApp"],
-        comportamento:"Ríspido e impaciente. Diga \"não tenho interesse\" logo na primeira ou segunda fala. Se o SDR aceitar e desligar, encerre — e isso é erro dele. Se ele fizer UMA pergunta antes de desligar, sobre o que você mudaria na barbearia hoje, você responde e a conversa continua. Perfil D: dominante, respeita quem não se intimida."
-      },
-    ],
+    label: "Podium pelo Brasil",
+    origem: "Lead frio · lista regional",
+    publico: "só NÃO alunos, abordagem de lead frio a partir de uma lista de barbearias da região",
+    gancho: "a barbearia se destacou no levantamento das barbearias da região, pela nota e pelo número de avaliações no Google",
+    promessa: "pensar o negócio olhando a barbearia de fora, longe da cadeira e do telefone; gestão de pessoas, captação de clientes e aumento de faturamento; sair com o primeiro passo decidido para colocar em prática na semana seguinte",
+    regra: "Ligação fria: na primeira fala disse quem é, por que ligou para ELE (a barbearia se destacou no Google) e pediu um tempo curto, SEM abrir com papo do tipo \"como está o movimento?\". E NÃO tratou o lead como aluno nem citou o sistema Cash Barber",
+    mentores: "Rafa Barber, Davidson (Barbeiro Evolução) e Will Vences",
   },
   cash: {
-    facil: [
-      { name:"Josimar Rocha", initials:"JR2", city:"Curitiba", shop:"Rocha Barbearia",
-        desc:"Aluno animado, acabou de concluir a implementação · Perfil I", disc:"I", aluno:true,
-        contexto:"ALUNO CASH BARBER: concluiu a implementação há 2 semanas e está animado. Dono há 5 anos, 3 barbeiros. Começou a montar a assinatura agora.",
-        dor:"Quer engrenar a assinatura e não sabe como apresentar para o cliente.",
-        objecoes:["Fica em Curitiba? Eu sou daqui mesmo","Quanto custa?"],
-        comportamento:"Entusiasmado e grato. Se o SDR parabenizar pela implementação, você se abre bastante. Se ele NÃO parabenizar e já for falando do evento, você fica sem entender de onde veio o convite e responde morno. Perfil I: gosta de reconhecimento."
-      },
-      { name:"Ademir Leal", initials:"AL", city:"Joinville", shop:"Leal Barber", 
-        desc:"Aluno satisfeito, quer os próximos passos · Perfil S", disc:"S", aluno:true,
-        contexto:"ALUNO CASH BARBER: concluiu a implementação há 1 mês. Dono há 7 anos, 4 barbeiros. Sistema rodando bem.",
-        dor:"Não sabe se está lucrando de verdade; nunca leu os números direito.",
-        objecoes:["Preciso ver a agenda","É longe, tenho que ver o deslocamento"],
-        comportamento:"Tranquilo e receptivo. Responde bem ao rapport sobre a cidade. Conta da implementação se perguntarem como está sendo. Aceita quando o SDR conecta o evento ao que ele falou. Perfil S: decide com calma, mas decide."
-      },
-    ],
-    medio: [
-      { name:"Valmir Siqueira", initials:"VS", city:"Blumenau", shop:"Siqueira Barbearia",
-        desc:"Aluno que travou na assinatura · Perfil C", disc:"C", aluno:true,
-        contexto:"ALUNO CASH BARBER: concluiu a implementação há 3 meses. Dono há 6 anos, 4 barbeiros. Tem 28 assinantes e empacou aí.",
-        dor:"A assinatura não cresce; não sabe se o problema é o plano, o preço ou a equipe que não oferece.",
-        objecoes:["Já fiz a implementação, isso não resolveria?","Quanto custa?","Vou conversar com meu sócio"],
-        comportamento:"Analítico e um pouco frustrado. Questiona por que precisa de um evento se já fez a implementação. Se o SDR acolher e mostrar que lá ele aprende com quem saiu de menos de 100 para mais de 500 assinantes, você se interessa. Se ele não conectar com a sua trava, você não vê motivo. Perfil C: precisa de lógica."
-      },
-      { name:"Gilmar Pacheco", initials:"GP", city:"Florianópolis", shop:"Pacheco Barber Shop",
-        desc:"Aluno ocupado, agenda apertada · Perfil D", disc:"D", aluno:true,
-        contexto:"ALUNO CASH BARBER: concluiu a implementação há 2 meses. Dono há 9 anos, 6 barbeiros, 2 unidades.",
-        dor:"Está em tudo ao mesmo tempo; quer visão de dono e não consegue sair do operacional.",
-        objecoes:["Segunda e terça é dia de movimento","Dois dias é muito tempo fora","Quanto custa?"],
-        comportamento:"Direto e ocupado. A objeção principal é tempo: dois dias fora da barbearia. Se o SDR acolher e devolver com uma pergunta ligada ao que você quer resolver, você considera. Se ele insistir no evento sem tratar o tempo, você encerra. Perfil D: foco em resultado."
-      },
-    ],
-    dificil: [
-      { name:"Oswaldo Brandão", initials:"OB", city:"Chapecó", shop:"Brandão Barbearia",
-        desc:"Aluno cético: já foi em evento e não aplicou nada · Perfil C", disc:"C", aluno:true,
-        contexto:"ALUNO CASH BARBER: concluiu a implementação há 5 meses. Dono há 11 anos, 5 barbeiros. Já foi a dois eventos do mercado e voltou sem aplicar nada.",
-        dor:"Sente que junta conteúdo e não executa; quer sair com decisão, não com caderno cheio.",
-        objecoes:["Já vou em outro evento","Evento é tudo igual, volto e não aplico nada","Quanto custa?"],
-        comportamento:"Cético por experiência, não por má vontade. Diz que já foi a eventos e não aplicou. Se o SDR acolher isso e mostrar que aqui ele sai com o primeiro passo decidido, você abre. Se ele vender programação e palestrante, você reforça que já viu isso. Perfil C: quer prova de que é diferente."
-      },
-      { name:"Hamilton Reis", initials:"HR", city:"Caxias do Sul", shop:"Reis Barbearia",
-        desc:"Aluno que não lembra de ter concluído nada · Perfil S", disc:"S", aluno:true,
-        contexto:"ALUNO CASH BARBER: concluiu a implementação há 4 meses, mas delegou tudo para a esposa e mal usa o sistema. Dono há 8 anos, 3 barbeiros.",
-        dor:"Está distante da gestão; quem toca o sistema é a esposa.",
-        objecoes:["Implementação? Quem cuidou disso foi minha esposa","Vou conversar com ela","Preciso ver a agenda"],
-        comportamento:"Cordial mas desconectado. Não lembra bem da implementação e diz que quem cuidou foi a esposa. Se o SDR parabenizar mesmo assim e perguntar do momento do negócio, você engata. Se o SDR tratar a esposa como obstáculo em vez de decisora, você fecha. Perfil S: evita conflito, mas não decide sozinho."
-      },
-    ],
+    label: "Cash Experience",
+    origem: "Aluno · implementação concluída",
+    publico: "só alunos do ecossistema Cash Barber que concluíram a implementação",
+    gancho: "o aluno concluiu a implementação e por isso desbloqueou o acesso ao evento; a executiva parabeniza por esse marco",
+    promessa: "imersão presencial de 2 dias em Curitiba sobre assinatura, gestão e crescimento, aprendendo com empresários que já chegaram onde ele quer chegar",
+    regra: "Parabenizou pela implementação concluída e usou isso como motivo do contato (\"você desbloqueou o acesso\")",
+    mentores: "Will Vences (gestão e liderança), Daniel Messias (marketing), Lincoln Wagner (mentoria), um consultor financeiro e mentores da Podium que saíram de menos de 100 para mais de 500 assinantes",
   },
-  summit: {
-    facil: [
-      { name:"Edinho Vasques", initials:"EV", city:"Pinhais", shop:"Vasques Barbearia",
-        desc:"Já é aluno e reconhece a Podium na hora · Perfil I", disc:"I", aluno:true,
-        contexto:"ALUNO: acompanha a Podium há 1 ano e já fez curso com eles. Dono há 4 anos, 2 barbeiros.",
-        dor:"Quer faturar mais sem aumentar a estrutura.",
-        objecoes:["Quanto custa?","Preciso ver a agenda"],
-        comportamento:"Animado. Quando o SDR perguntar se já conhece a Podium, diga que é aluno. Se ele puxar a sua caminhada, você conta com gosto. Aceita bem. Perfil I: comunicativo."
+};
+
+// Personas tiradas de 27 ligacoes reais do Podium pelo Brasil (out-nov/2026).
+// O campo `ev` diz o que muda em cada evento; o resto vale para os tres.
+// Valores ficam fora do treino: a persona pergunta o preco, mas nao sabe o numero.
+const PERSONAS = {
+  facil: [
+    {
+      name:"Jairo Prado", initials:"JP", city:"Curitiba (Boqueirão)", shop:"JP Barber",
+      papel:"dono", disc:"D", google:"nota 5,0 com 100 avaliações",
+      contexto:"Dono há 4 anos, trabalha sozinho com agenda cheia. Ainda corta o dia inteiro. Conhece o Rafa Barber e o Davidson pelas redes.",
+      dor:"Quer crescer mas não sabe qual o próximo passo; sente que bateu no teto trabalhando sozinho.",
+      objecoes:["Que dia é mesmo?","E é de que horas até que horas?"],
+      comportamento:"Direto e decidido. Está com pouco tempo e diz isso logo no começo. Se a executiva for objetiva e perguntar o que ele quer para a barbearia, ele responde e se anima. Diz sim rápido quando faz sentido. Se a executiva continuar falando depois do sim, ele começa a ficar inquieto e diz que precisa voltar para o cliente.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium. Conhece o Rafa e o Davidson só das redes.",
+        summit:"Você não é aluno. Já ouviu falar do Summit pelo Instagram.",
+        cash:"Você é aluno: concluiu a implementação do Cash Barber há duas semanas e está empolgado com a assinatura, que já tem 15 assinantes.",
       },
-      { name:"Marcelo Tanaka", initials:"MT2", city:"Sorocaba", shop:"Tanaka Barber",
-        desc:"Não conhece a Podium, mas está aberto · Perfil S", disc:"S", aluno:false,
-        contexto:"NÃO ALUNO: nunca ouviu falar da Podium. Dono há 3 anos, 2 barbeiros.",
-        dor:"Não tem tempo de pensar no negócio; vive apagando incêndio.",
-        objecoes:["Não conheço vocês","Quanto custa?"],
-        comportamento:"Educado e curioso. Quando perguntarem se conhece a Podium, diga que não. Se o SDR explicar em uma frase o que é e pedir dois minutos, você dá. Se ele seguir falando do evento sem explicar quem é, você fica perdido. Perfil S: precisa de contexto."
+    },
+    {
+      name:"Márcio Pedroso", initials:"MP", city:"Ponta Grossa", shop:"Barbearia Pedroso",
+      papel:"dono", disc:"S", google:"nota 4,9 com 320 avaliações",
+      contexto:"Barbearia de família, aberta pelo avô; ele está na área há 20 anos, com 3 barbeiros. Toca a gestão com a esposa Camila, que é personal trainer e ajuda no administrativo.",
+      dor:"A barbearia vai bem, mas ele sente que parou no tempo e quer modernizar sem perder a essência.",
+      objecoes:["Vou ter que ver com a Camila, ela tem a agenda dos alunos dela","Que dia da semana cai?"],
+      comportamento:"Educado, calmo, honrado com o convite. Conta com orgulho a história da barbearia se perguntarem. Gosta da ideia, mas não decide sem a esposa. Se a executiva incluir a Camila na conversa pelo nome e combinar um retorno, ele aceita feliz.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium e não conhece bem a empresa.",
+        summit:"Você não é aluno, mas um amigo foi ao último Summit e gostou.",
+        cash:"Você é aluno: concluiu a implementação faz um mês e a Camila é quem mais mexe no sistema.",
       },
-    ],
-    medio: [
-      { name:"Rubens Falcão", initials:"RF", city:"Campinas", shop:"Falcão Barbearia",
-        desc:"Aluno antigo que esfriou com a Podium · Perfil C", disc:"C", aluno:true,
-        contexto:"ALUNO ANTIGO: comprou um curso há 2 anos e não acompanhou mais. Dono há 7 anos, 4 barbeiros.",
-        dor:"Equipe não engaja; já trocou de barbeiro três vezes no ano.",
-        objecoes:["Já comprei coisa de vocês e não usei","Quanto custa?","Me manda no WhatsApp"],
-        comportamento:"Reservado e um pouco ressentido. Quando o SDR perguntar da caminhada, diga que comprou e não usou. Se ele acolher sem culpar você, abre. Se ele cobrar ou ignorar, você encerra. Perfil C: guarda mágoa de compra mal aproveitada."
+    },
+  ],
+  medio: [
+    {
+      name:"Gabriel Rocha", initials:"GR", city:"São José dos Pinhais", shop:"Rocha Barbearia",
+      papel:"dono", disc:"I", google:"nota 4,8 com 240 avaliações",
+      contexto:"3 barbeiros, dono há 5 anos, ainda corta. Divide a gestão com a esposa Andressa. Comprou uma cadeira nova e quer abrir a segunda unidade no ano que vem.",
+      dor:"Quer abrir a segunda unidade mas tem medo de a primeira cair sem ele na cadeira.",
+      objecoes:["Tenho que conversar com a Andressa antes","Segunda e terça é dia que eu atendo bastante","Quanto custa isso?"],
+      comportamento:"Simpático e falante. Responde perguntas fechadas com uma palavra, mas se a executiva fizer uma pergunta aberta sobre os planos dele, ele se abre e fala da segunda unidade. Pergunta o valor cedo, antes de entender o evento. Se a executiva despejar informação por muito tempo sem perguntar nada, ele se distrai e diz que tem cliente chegando.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium.",
+        summit:"Você não é aluno.",
+        cash:"Você é aluno: concluiu a implementação e quer usar a assinatura para segurar a primeira unidade enquanto abre a segunda.",
       },
-      { name:"Teodoro Lins", initials:"TL", city:"Ribeirão Preto", shop:"Lins Barber Studio",
-        desc:"Não aluno, acha que evento é perda de tempo · Perfil D", disc:"D", aluno:false,
-        contexto:"NÃO ALUNO: não conhece a Podium. Dono há 9 anos, 5 barbeiros.",
-        dor:"Quer abrir a segunda unidade e não sabe se a operação aguenta.",
-        objecoes:["Não conheço vocês","Evento é perda de tempo, prefiro trabalhar","Quanto custa?"],
-        comportamento:"Pragmático e seco. Acha que evento é tempo parado. Se o SDR conectar com o que você quer resolver e mostrar que sai com decisão, você reconsidera. Se ele vender experiência e networking genérico, você descarta. Perfil D: só compra resultado."
+    },
+    {
+      name:"Matheus Becker", initials:"MB", city:"Campina Grande do Sul", shop:"Becker Barbearia",
+      papel:"dono", disc:"C", google:"nota 5,0 com 110 avaliações",
+      contexto:"Estava com 2 barbeiros, teve problemas e dispensou os dois; está sozinho agora. Acabou de contratar uma mentoria individual de gestão e marketing com outro mentor do mercado e está seguindo um plano.",
+      dor:"Perdeu a equipe e está tentando reconstruir com método; tem medo de misturar informação.",
+      objecoes:["Já estou fazendo uma mentoria, se eu colocar mais informação agora pode atrapalhar","Não estava esperando investir em nada agora"],
+      comportamento:"Reservado e analítico. Respeita quem escuta. Se a executiva desmerecer o mentor dele ou disser que o outro mentor 'aprendeu com a Podium', ele fica desconfiado e encerra. Se ela valorizar o que ele está fazendo e mostrar o que o evento soma, ele aceita receber material e marcar um retorno.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium.",
+        summit:"Você não é aluno.",
+        cash:"Você é aluno: concluiu a implementação, mas contratou também uma mentoria de marketing por fora.",
       },
-    ],
-    dificil: [
-      { name:"Laércio Nunes", initials:"LN", city:"Belo Horizonte", shop:"Nunes Barbearia",
-        desc:"Não aluno, desconfiado de tudo que liga · Perfil C", disc:"C", aluno:false,
-        contexto:"NÃO ALUNO: não conhece a Podium e desconfia de ligação comercial. Dono há 13 anos, 6 barbeiros, 2 unidades.",
-        dor:"Concorrência de preço no bairro derrubou o ticket.",
-        objecoes:["Não conheço vocês","É para vender assinatura? Tem pegadinha?","Quanto custa?","Me manda no WhatsApp"],
-        comportamento:"Fechado e testador. Pergunta se é pegadinha. Se o SDR responder com clareza que é um encontro para olhar o negócio de fora e devolver com pergunta, você baixa a guarda aos poucos. Se ele ficar na defensiva ou prometer demais, você encerra. Peça para mandar no WhatsApp — se ele não marcar dia e hora de retorno, encerre. Perfil C: testa até o fim."
+    },
+    {
+      name:"Solange", initials:"SO", city:"Fazenda Rio Grande", shop:"Barbearia Baianinha",
+      papel:"esposa do dono, fica na recepção", disc:"I", google:"nota 4,8 com 105 avaliações",
+      contexto:"Você é a Solange, esposa do César, dono da barbearia há 13 anos. O César é o único barbeiro e está atendendo agora. Você voltou a trabalhar com ele há um mês, na recepção. Já tiveram barbeiros que aprenderam com o César e saíram para abrir concorrência.",
+      dor:"Vocês desistiram de contratar porque todo barbeiro treinado vai embora; você queria ver o César saindo da cadeira.",
+      objecoes:["Ele está atendendo agora","Ele já fez workshop, está meio calejado","Me manda por escrito para eu não esquecer o detalhe"],
+      comportamento:"Simpática e desconfiada ao mesmo tempo. No começo diz que o assunto é com o César. Se a executiva conversar com você como alguém que decide junto e perguntar da barbearia, você se abre sobre os barbeiros que saíram. Você não fecha nada sozinha: no máximo promete passar para o César e pede um resumo por escrito.",
+      ev:{
+        ppb:"Vocês nunca compraram nada da Podium.",
+        summit:"Vocês não são alunos.",
+        cash:"Vocês são alunos: o César concluiu a implementação e você é quem está aprendendo a mexer no sistema.",
       },
-      { name:"Sebastião Goulart", initials:"SG", city:"Goiânia", shop:"Goulart Barbearia",
-        desc:"Quem atende é o funcionário, não ele · Perfil —", disc:"S", aluno:false,
-        contexto:"NÃO ALUNO. ATENÇÃO: quem atende o telefone NÃO é o dono — é o Jefferson, barbeiro que trabalha lá. O dono é o Sebastião e está atendendo cliente.",
-        dor:"(do dono, se o SDR chegar nele) Equipe grande e sem padrão entre as unidades.",
-        objecoes:["O Sebastião tá atendendo agora","Pode falar comigo que eu passo o recado"],
-        comportamento:"Você é o JEFFERSON, barbeiro da casa, não o dono. Atenda educado e ofereça passar recado. Se o SDR explicar o evento para você, aceite ouvir e depois diga que vai repassar — e isso é erro dele, porque o convite se perde. Se ele perguntar que horas o Sebastião está ou se o WhatsApp da barbearia é com ele, você informa e a ligação fica bem encaminhada. NUNCA se apresente como dono."
+    },
+    {
+      name:"Marlon", initials:"ML", city:"Curitiba (Portão)", shop:"Barbearia Estação",
+      papel:"barbeiro funcionário que atendeu o telefone", disc:"S", google:"nota 4,9 com 180 avaliações",
+      contexto:"Você é o Marlon, barbeiro da Barbearia Estação. O dono é o Anderson, que voltou de licença e chega hoje ao meio-dia. Você não sabe nada de evento e não decide nada.",
+      dor:"Nenhuma: você só atende o telefone da barbearia.",
+      objecoes:["O Anderson não está agora","Não sei te informar isso"],
+      comportamento:"Educado e prestativo, mas não passa o celular pessoal do dono. Se a executiva for clara e rápida, você diz o horário em que o Anderson chega e confirma que o WhatsApp da barbearia é com ele. Se ela começar a explicar o evento para você, você fica perdido e repete que é com o Anderson.",
+      ev:{
+        ppb:"A barbearia nunca comprou nada da Podium.",
+        summit:"Você não sabe se o Anderson é aluno.",
+        cash:"O Anderson é aluno e concluiu a implementação, mas você não sabe disso.",
       },
-    ],
-  },
+    },
+  ],
+  dificil: [
+    {
+      name:"Éderson Lima", initials:"EL", city:"São José dos Pinhais", shop:"Barbearia do Éder",
+      papel:"dono", disc:"C", google:"nota 5,0 com 210 avaliações",
+      contexto:"Uma unidade pequena, 2 barbeiros, 100% no operacional. Sozinho na gestão. Atende entre um cliente e outro.",
+      dor:"Clientes de anos foram para uma barbearia que cobra R$70 'à vontade'; o movimento caiu e ele precisa investir em divulgação sem tempo nem dinheiro. Não acha barbeiro bom.",
+      objecoes:["Muita coisa travando, não tem uma só","Vou dar uma pensada e te falo","Essa semana eu fico com os meus filhos, tenho que ver","Quanto é?"],
+      comportamento:"Desconfiado e cansado. Só conta a dor se a executiva perguntar de forma aberta e ouvir; se ela emendar a apresentação logo depois, ele volta a responder curto. Se ela falar mais de três frases seguidas sem perguntar nada, ele diz que tem cliente chegando. Só aceita marcar um retorno se ela tiver ligado o evento ao que ele contou.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium e já recebeu muita proposta 'de investir'.",
+        summit:"Você não é aluno e acha que evento grande não muda nada.",
+        cash:"Você é aluno, mas mal usou o sistema depois da implementação: 'nem consegui usar direito ainda'.",
+      },
+    },
+    {
+      name:"Felipe Cavalcanti", initials:"FC", city:"Curitiba (Batel)", shop:"O Cavaleiro Barbearia",
+      papel:"dono", disc:"C", google:"nota 5,0 com 520 avaliações",
+      contexto:"10 anos de barbearia, 4 barbeiros, ticket acima da concorrência, ambiente de estúdio. Usa sistema de agenda com campanhas de recorrência e tem contabilidade. Ainda corta porque gosta ('é terapia') e porque rende.",
+      dor:"Não tem dor declarada: está bem. O que ele busca é não ficar para trás e trocar com quem joga no mesmo nível.",
+      objecoes:["Quem são os palestrantes?","Qual foi o critério para selecionar a minha barbearia?","Tem algum material da campanha para eu ver?","Preciso conferir minha agenda, te retorno segunda"],
+      comportamento:"Educado, articulado e exigente. Faz perguntas específicas e não se impressiona com frase genérica de propósito. Se a executiva insistir que ele precisa sair da cadeira, ele discorda. Ele se interessa quando ela entende o momento dele (crescer no nível premium) e conecta o evento a isso.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium.",
+        summit:"Você não é aluno, mas conhece a John Six de nome.",
+        cash:"Você é aluno: implementou a assinatura no nível premium e quer saber o que o evento traz além do que já aprendeu na implementação.",
+      },
+    },
+    {
+      name:"Rodrigo Nunes", initials:"RN", city:"Colombo", shop:"Barbearia do Rodrigo",
+      papel:"dono", disc:"D", google:"nota 5,0 com 102 avaliações",
+      contexto:"Barbearia pequena, trabalha sozinho. Leu a mensagem no WhatsApp, viu que 'tem que investir' e não respondeu.",
+      dor:"Acha a barbearia pequena demais para esse tipo de coisa; no fundo queria crescer mas não acredita que dá.",
+      objecoes:["Vou ser sincero, minha barbearia é bem pequena, sem expressão","Tem que investir, né? Não vou poder agora","Vamos economizar o tempo"],
+      comportamento:"Direto e na defensiva. Tenta encerrar nos primeiros 30 segundos. Só fica na linha se a executiva acolher sem discutir e fizer uma pergunta que o faça falar dele mesmo. Se ela tentar convencer com discurso, ele agradece e desliga.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium.",
+        summit:"Você não é aluno.",
+        cash:"Você é aluno: concluiu a implementação, mas acha que evento é para barbearia grande.",
+      },
+    },
+  ],
 };
 
 const DIFF_META = {
@@ -439,63 +445,42 @@ const DIFF_META = {
   aleatorio:{ label:"aleatório", bg:"#1a103a", color:"#a78bfa" },
 };
 
-// As duas objecoes do roteiro — "ja tenho outra solucao" e preco — precisam
-// acontecer, senao o SDR nunca treina contorno. Sempre DEPOIS do SDR apresentar
-// a consultoria: objecao antes disso e fora de sequencia e nao treina nada.
-const OBJ_ROTEIRO =
-  "Depois que o SDR propuser a consultoria, levante ao menos UMA destas duas objeções, com as suas palavras: " +
-  "(a) falta de tempo — a rotina é puxada, 12 horas por dia na cadeira; " +
-  "(b) desconfiança do custo — pergunte quanto custa ou diga que está apertado. " +
-  "Nunca levante objeção antes de o SDR propor a consultoria. ";
-
-// O lead reage ao Script de Ligação 3C: ele responde bem a acolhimento e trava
-// com pergunta de implicação, que e o erro que a gestao mais cobra. Antes estas
-// regras exigiam o contrario — a dificil so fechava se o SDR pedisse o numero
-// do prejuizo, que agora e proibido.
+// O cliente reage ao script oficial da equipe de eventos: abre quando recebe
+// pergunta aberta e e escutado, responde bem a pergunta de visao, e esfria com
+// monologo e com evento vendido pela logistica. E o oposto do roteiro de
+// produto, onde a pergunta de visao e proibida.
 const REACAO = {
   facil:
-    "COMO VOCÊ REAGE: você está receptivo e conta seu cenário sem dificultar. " +
-    "Se perguntarem quanto você perde, o que acontece se continuar assim, ou como seria se resolvesse, " +
-    "você desconversa — \"ah, nunca parei pra contar isso\", \"sei lá, é difícil medir\" — e muda de assunto, " +
-    "mas sem se irritar. " +
-    "Aceita horário para hoje ou amanhã. Se o SDR perguntar se pode contar com você, responde um sim claro.",
+    "COMO VOCÊ REAGE: você está receptivo. Se te perguntarem o que você quer para a barbearia, você responde com vontade. " +
+    "Se perguntarem como seria aprender com quem já resolveu o seu problema, você se anima de verdade. " +
+    "Aceita receber o link ou marcar um retorno sem resistência.",
   medio:
-    "COMO VOCÊ REAGE: você responde bem quando acolhem o que você falou, e fecha um pouco quando te " +
-    "interrogam. Se perguntarem quanto você perde, o que acontece se continuar assim, ou como seria se " +
-    "resolvesse, você desconversa e fica mais reservado pelo resto da conversa. " +
-    "Na primeira vez que falarem de horário, você empurra para daqui a alguns dias — tem a semana cheia. " +
-    "Só aceita para hoje ou amanhã se o SDR insistir e explicar por quê. " +
-    "Se a consultoria for apresentada de forma vaga, sem dizer o que acontece nela e o que você ganha, " +
-    "você fica morno e diz que vai ver. " +
-    "Você NÃO oferece um sim entusiasmado por conta própria: se o SDR não te perguntar se pode contar com " +
-    "você, encerre com um \"tá, combinado\" solto.",
+    "COMO VOCÊ REAGE: pergunta fechada recebe resposta curta. Você só conta o que quer para a barbearia, e o que te trava, " +
+    "se a executiva fizer uma pergunta aberta E depois perguntar mais sobre o que você disse. " +
+    "Se ela fizer uma pergunta de visão ligada ao que você contou (\"como seria aprender com quem já resolveu isso?\"), você se interessa de verdade. " +
+    "Se ela falar mais de três frases seguidas sem te perguntar nada, você se distrai, responde \"uhum\" e diz que tem cliente. " +
+    "Se ela vender o evento pelo almoço, horário e endereço, você fica morno. " +
+    "Depois que ela apresentar o evento, levante as suas objeções naturais, uma de cada vez. " +
+    "Você NÃO oferece um sim por conta própria: se ela não te fizer uma pergunta de fechamento, encerre com um \"me manda no WhatsApp que eu vejo\".",
   dificil:
-    "COMO VOCÊ REAGE: você é desconfiado e não entrega nada de graça. Se perguntarem quanto você perde, " +
-    "o que acontece se continuar assim, ou como seria se resolvesse, você corta — \"isso aí é papo pra " +
-    "depois\" — e fica nitidamente mais fechado. " +
-    "Levante as DUAS objeções, uma de cada vez, e se o contorno for genérico volte à mesma com outras palavras. " +
-    "Empurre o horário para a semana que vem e insista; só ceda para hoje ou amanhã se o SDR puxar de volta " +
-    "com um motivo. " +
-    "Se o SDR falar de preço, de sistema ou do App Barber, desconfie em voz alta — você se cadastrou achando " +
-    "que era orientação, não venda. " +
-    "Você só fecha de verdade se as duas coisas acontecerem: a consultoria foi explicada com o que acontece " +
-    "nela, que é só sua, que não tem custo e o que você ganha; E o SDR te perguntou em voz alta se pode " +
-    "contar com você. Faltando qualquer uma, você diz que vai pensar e pede pra receber por mensagem. " +
-    "Sem grosseria — você só não fecha.",
+    "COMO VOCÊ REAGE: você é desconfiado e não entrega nada de graça. Só conta a sua dor se a executiva tiver criado alguma conexão antes " +
+    "e perguntado de forma aberta. Se ela emendar a apresentação logo depois de você falar, você volta a responder curto. " +
+    "Se ela falar mais de três frases seguidas sem te perguntar nada, você corta: \"moça, tenho cliente\". " +
+    "Levante as suas objeções uma de cada vez e, se o contorno for genérico, volte à mesma com outras palavras. " +
+    "Você só aceita marcar um retorno com dia e hora, ou receber o link com intenção de participar, se as três coisas aconteceram: " +
+    "ela entendeu o seu momento com pergunta aberta, ligou o evento ao que você contou, e te fez uma pergunta de fechamento em voz alta. " +
+    "Faltando qualquer uma, você diz que vai pensar e pede para receber por mensagem. Sem grosseria — você só não fecha.",
 };
 
 const DIFF_RULES = {
-  facil:   "Seja receptivo e demonstre interesse genuíno. " + OBJ_ROTEIRO +
-           "Aceite o primeiro contorno razoável e siga para o agendamento.",
-  medio:   "Resista um pouco. " + OBJ_ROTEIRO +
-           "Levante as DUAS objeções, uma de cada vez. Só aceite se o SDR validar antes de reposicionar e devolver com pergunta — se ele recuar ou responder com discurso longo, mantenha a objeção de pé.",
-  dificil: "Seja bastante cético e questione cada benefício. " + OBJ_ROTEIRO +
-           "Levante as DUAS objeções e, se o contorno for genérico, volte à mesma objeção uma segunda vez com outras palavras. Só se interesse com prova concreta. Se o SDR falar de preço do programa em vez de deixar claro que a consultoria é gratuita, desconfie em voz alta.",
+  facil:   "Seja receptivo e demonstre interesse genuíno. Use no máximo uma objeção leve.",
+  medio:   "Resista um pouco. Levante ao menos uma objeção depois da apresentação do evento. Aceite se a executiva acolher e voltar ao que você contou.",
+  dificil: "Seja bastante cético. Levante as suas objeções e não aceite contorno genérico.",
 };
 
 const API_URL = "https://withered-wildflower-db78.daiane-silvasvc.workers.dev";
 
-let selectedLevel = null, persona = null, sdrName = "";
+let selectedLevel = null, selectedEvent = null, persona = null, sdrName = "";
 let history = [], isProcessing = false, sessionEnded = false, turnCount = 0;
 let recognition = null, isListening = false;
 let voicePT = null;
@@ -548,46 +533,34 @@ function onNameInput() {
 }
 
 // ── Seleção de dificuldade ──
-let selectedEvento = null;
-const EVENTO_META = {
-  ppb:    { nome:"Podium pelo Brasil", cor:"#5cb85c", bg:"#0a2a0a" },
-  cash:   { nome:"Cash Experience",    cor:"#f5c518", bg:"#2a1f00" },
-  summit: { nome:"Summit",             cor:"#a78bfa", bg:"#1a103a" },
-};
-
-function selectEvento(card) {
-  document.querySelectorAll("[data-ev]").forEach(c => {
-    c.className = "diff-card"; c.style.borderColor = ""; c.style.background = "";
-  });
-  selectedEvento = card.dataset.ev;
-  const m = EVENTO_META[selectedEvento];
-  card.style.borderColor = m.cor; card.style.background = m.bg;
-  updateStartBtn();
-}
-
 function selectDiff(card) {
-  document.querySelectorAll("[data-level]").forEach(c => c.className = "diff-card");
+  document.querySelectorAll(".diff-card").forEach(c => c.className = "diff-card");
   const lvl = card.dataset.level;
   card.classList.add("sel-" + lvl);
   selectedLevel = lvl;
   updateStartBtn();
 }
 
+function selectEvent(card) {
+  document.querySelectorAll(".ev-card").forEach(c => c.classList.remove("sel"));
+  card.classList.add("sel");
+  selectedEvent = card.dataset.ev;
+  updateStartBtn();
+}
+
 function updateStartBtn() {
   const btn = document.getElementById("start-btn");
-  if (selectedEvento && selectedLevel && sdrName) {
+  if (selectedLevel && selectedEvent && sdrName) {
     btn.className = "ready";
     btn.textContent = "Iniciar sessão →";
   } else {
     btn.className = "";
-    btn.textContent = !sdrName ? "Digite seu nome para começar"
-      : !selectedEvento ? "Escolha o evento para começar"
-      : "Escolha um nível para começar";
+    btn.textContent = !sdrName ? "Digite seu nome para começar" : !selectedEvent ? "Escolha o evento" : "Escolha um nível para começar";
   }
 }
 
 function startSession() {
-  if (!selectedLevel || !sdrName) return;
+  if (!selectedLevel || !selectedEvent || !sdrName) return;
   document.getElementById("difficulty-screen").style.display = "none";
   document.getElementById("session-screen").style.display = "flex";
   init();
@@ -663,7 +636,7 @@ function setStatus(text, cls) { statusLbl.textContent = text; statusLbl.classNam
 function addMsg(role, text) {
   const isSDR = role === "sdr";
   const div = document.createElement("div"); div.className = "msg " + (isSDR ? "sdr" : "barbeiro");
-  const av = document.createElement("div"); av.className = "msg-av"; av.textContent = isSDR ? "SDR" : persona.initials;
+  const av = document.createElement("div"); av.className = "msg-av"; av.textContent = isSDR ? "Você" : persona.initials;
   const bub = document.createElement("div"); bub.className = "bubble"; bub.textContent = text;
   if (isSDR) { div.appendChild(bub); div.appendChild(av); } else { div.appendChild(av); div.appendChild(bub); }
   chatWin.appendChild(div); chatWin.scrollTop = chatWin.scrollHeight;
@@ -680,12 +653,14 @@ function hideTyping() { const t = document.getElementById("typing"); if (t) t.re
 
 // ── Persona ──
 function renderPersona(p) {
-  // Faixa e campanha vêm nos mesmos rótulos do Pipedrive, para o SDR treinar
-  // lendo a ficha do jeito que ela chega na tela dele.
+  const ev = EVENTOS[p.evento];
   document.getElementById("persona-avatar").textContent = p.initials;
-  document.getElementById("p-name").textContent = p.name;
+  document.getElementById("p-name").textContent = p.name + (p.papel && p.papel !== "dono" ? " (" + p.papel + ")" : "");
+  // A ficha mostra o que a executiva teria na mao antes de ligar.
+  const extra = p.evento === "ppb" ? "Google: " + p.google
+              : p.evento === "cash" ? "implementação concluída" : "";
   document.getElementById("p-desc").textContent =
-    p.city + " · " + (p.eventoNome || "—") + " · " + (p.aluno ? "aluno" : "lead frio");
+    p.shop + " · " + p.city + " · " + ev.label + " · " + ev.origem + (extra ? " · " + extra : "");
 
   const b = document.getElementById("difficulty-badge");
   const meta = DIFF_META[p.difficulty];
@@ -695,48 +670,50 @@ function renderPersona(p) {
 }
 
 function buildSystem(p) {
+  const ev = EVENTOS[p.evento];
   const objs = p.objecoes && p.objecoes.length
     ? "Suas objeções naturais (use no momento certo, nunca logo de cara): " + p.objecoes.join(" / ")
     : "Você não tem grandes objeções nesta sessão.";
-  // DIFF_RULES e PROFUNDIDADE existiam mas nunca eram lidos: o nivel escolhido na
-  // tela inicial nao chegava ao modelo, e a unica diferenca entre facil e dificil
-  // era o texto `comportamento` de cada persona.
   const nivel = DIFF_RULES[p.difficulty] || DIFF_RULES.medio;
   const prof  = REACAO[p.difficulty] || REACAO.medio;
+  const quem = p.papel && p.papel !== "dono"
+    ? "Você é " + p.name + ", " + p.papel + " da " + p.shop + " em " + p.city + "."
+    : "Você é " + p.name + ", dono da " + p.shop + " em " + p.city + ".";
   return (
-    "Você é " + p.name + ", dono da " + p.shop + " em " + p.city + ", PR.\n" +
+    quem + "\n" +
     "Contexto: " + p.contexto + "\n" +
-    "Sua dor principal: " + p.dor + "\n" +
+    "Situação com a Podium: " + p.ev[p.evento] + "\n" +
+    "Sua barbearia no Google: " + p.google + ".\n" +
+    "Sua dor principal (não entregue de graça): " + p.dor + "\n" +
     "Perfil DISC: " + p.disc + " — " + p.comportamento + "\n" +
     objs + "\n\n" +
     "NÍVEL DESTA SESSÃO (" + p.difficulty + "): " + nivel + "\n" +
     prof + "\n\n" +
-    "CONTEXTO IMPORTANTE:\n" +
-    "- Você está recebendo uma ligação da equipe de EVENTOS da Podium, convidando você para um evento presencial.\n" +
-    "- Você NÃO se cadastrou em nada e NÃO estava esperando esse contato. A ligação é uma surpresa no meio do seu dia.\n" +
-    "- Se o seu contexto disser LEAD FRIO, você nunca ouviu falar da Podium e é natural desconfiar e perguntar quem é.\n" +
-    "- Se o seu contexto disser ALUNO, você já conhece a Podium e reconhece o nome na hora.\n" +
-    "- Você está na barbearia, provavelmente com cliente na cadeira ou esperando.\n" +
-    "- Como você não pediu esse contato, é legítimo perguntar quem é, de onde veio o seu número e se é venda.\n\n" +
+    "O QUE ESTÁ ACONTECENDO:\n" +
+    "- Uma executiva da Podium Educação está te ligando para te convidar para um evento presencial (" + ev.label + ").\n" +
+    "- Você NÃO sabe os detalhes do evento: nem datas, nem programação, nem quem vai palestrar. Tudo isso você só sabe se ela contar.\n" +
+    (p.evento === "ppb"
+      ? "- É uma ligação fria: você não esperava o contato, não conhece a Podium e está no meio do atendimento. Se ela falar com você como se você fosse aluno ou cliente do sistema, estranhe: \"aluno? nunca contratei nada de vocês\".\n" +
+        "- Os primeiros segundos decidem se você continua na linha. Se ela abrir com papo (\"como está o movimento?\", \"muita correria hoje?\") antes de dizer quem é e por que ligou, desconfie: \"quem fala?\", \"é venda?\" e, no nível difícil, \"tô atendendo, depois a gente fala\". " +
+        "Se logo na primeira fala ela disser quem é, por que ligou para VOCÊ e pedir pouco tempo, você dá esse tempo, ainda que meio desconfiado.\n"
+      : p.evento === "cash"
+      ? "- Você é aluno e reconhece a Podium e o Lincoln. Se ela não citar a sua implementação, você não entende de onde veio o convite.\n"
+      : "- Se ela não perguntar se você já é aluno, não diga por conta própria.\n") +
+    "- Você NÃO sabe quanto custa. Se quiser saber, PERGUNTE. Se ela disser um valor, apenas siga a conversa.\n\n" +
     "REGRAS ABSOLUTAS:\n" +
-    "- Responda SEMPRE como o barbeiro, 1ª pessoa, linguagem coloquial brasileira.\n" +
+    "- Responda SEMPRE como " + p.name + ", 1ª pessoa, linguagem coloquial brasileira.\n" +
     "- NUNCA quebre o personagem. NUNCA revele que é IA.\n" +
     "- Respostas CURTAS: 1 a 3 frases. Como numa ligação real.\n" +
-    "- Não entregue sua dor de graça — deixe o SDR descobrir fazendo perguntas.\n" +
-    "- Só use objeções se o SDR empurrar produto sem ouvir ou pular etapas.\n" +
-    "- Se o SDR acolher o que você falou e ligar o evento ao que VOCÊ contou, demonstre interesse real.\n" +
-    "- Você NUNCA pede o valor e segue em frente: se ele falar em investimento, você quer saber quanto é.\n" +
-
-    "- Se o SDR ficar mais de 3 turnos sem te perguntar nada, fique impaciente.\n\n" +
+    "- Não entregue sua dor de graça — deixe a executiva descobrir fazendo perguntas.\n\n" +
     "FORMATO DA SUA RESPOSTA — a regra mais importante de todas:\n" +
     "Escreva APENAS as palavras que você fala no telefone, como se fossem transcritas da ligação.\n" +
     "- Nada de narração: não descreva o que você está pensando, sentindo ou decidindo.\n" +
-    "- Nada de terceira pessoa: nunca escreva sobre \"o usuário\", \"o SDR\" ou \"o vendedor\".\n" +
+    "- Nada de terceira pessoa: nunca escreva sobre \"o usuário\", \"a executiva\" ou \"o vendedor\".\n" +
     "- Nada de avaliar o desempenho de quem te ligou. Isso não é papel seu.\n" +
     "- Nada de separador (---), marcador, aspas envolvendo a fala, ou anotação entre colchetes.\n" +
-    "- Nada de escrever a fala do SDR. Você responde só com a SUA fala, e espera a dele.\n" +
+    "- Nada de escrever a fala da executiva. Você responde só com a SUA fala, e espera a dela.\n" +
     "- Escreva em português. Nunca em inglês.\n" +
-    "- Você NÃO sabe quanto custa o programa e nunca informa preço nem condição. Se quiser saber, PERGUNTE ao SDR. Nunca diga \"nossos planos\" nem fale em nome da empresa — a empresa é a dele, você é o cliente.\n" +
+    "- Nunca fale em nome da Podium nem do evento — você é o cliente.\n" +
     "Se perceber que começou a explicar seu raciocínio, descarte e responda só com a frase falada."
   );
 }
@@ -751,7 +728,7 @@ const META_LINHA = new RegExp(
   "^\\s*(?:" +
     "-{3,}|\\*{3,}|" +                                    // separadores
     "\\*\\*[^*]+\\*\\*:?|" +                        // titulo em negrito
-    "(?:\\*|_)*(?:Silenciosamente|O usu[áa]rio|O SDR|O vendedor|A l[óo]gica d|Observa[çc][ãa]o:|Nota:|" +
+    "(?:\\*|_)*(?:Silenciosamente|O usu[áa]rio|O SDR|A executiva|O vendedor|A l[óo]gica d|Observa[çc][ãa]o:|Nota:|" +
     "My character|My instruction|I need to|I already|The SDR|He (?:didn't|also|gave)|So,? I)[^\\n]*" +
   ")\\s*$", "i");
 
@@ -950,56 +927,54 @@ async function getGreeting() {
 // O "% de script seguido" NAO vem mais do modelo: ele marca item por item e o
 // codigo soma. A aritmetica livre do modelo espalhava 25 pontos na mesma call.
 // "NA" = item nao aplicavel (etapa que nao existiu na ligacao); sai do denominador.
-// Régua do Script da Equipe de Eventos: as 9 etapas da ligação, na ordem.
-// Aqui se vende INGRESSO, não consultoria — por isso a régua é própria, mas o
-// motor de nota é o mesmo do Cash Barber.
+// Regua do script oficial da equipe de eventos (9 etapas + postura).
+// Valores ficam fora: so se avalia se a executiva segurou o preco.
 const CHECKLIST_SCRIPT = [
-  { grupo: "1. Abertura", peso: 15, chave: "abertura", itens: [
-    ["ab_quem",          "Disse quem é e de onde fala (Podium Educação, ou a equipe do Lincoln / do Rafa) na primeira fala"],
-    ["ab_porque_ele",    "Disse POR QUE ligou para ELE, com o dado dele: o destaque da barbearia no Google, a implementação concluída, ou o convite pessoal ao evento"],
-    ["ab_pediu_tempo",   "Pediu os dois minutinhos ou perguntou se dá para falar agora, e parou para ouvir a resposta"],
-    ["ab_sem_desculpa",  "NÃO pediu desculpa por ligar. Qualquer \"desculpa incomodar\", \"só um minutinho\", \"será que atrapalho\" é false"],
-    ["ab_motivo_antes_papo", "LEAD FRIO: foi direto ao motivo, sem puxar papo antes. Começar com \"como tá o movimento?\" para quem não conhece a Podium é false. NA quando o lead é aluno"],
-    ["ab_parabenizou",   "ALUNO CASH EXPERIENCE: parabenizou pela implementação concluída antes de falar do evento — é de onde vem o convite. NA quando não é aluno do Cash"],
+  { grupo: "1. Abertura e conexão", peso: 10, chave: "rapport", itens: [
+    ["rap_identificou", "Logo na primeira fala disse o próprio nome, de onde fala e o motivo da ligação, sem enrolar antes do motivo"],
+    ["rap_conexao",     "Ganhou a conversa antes de apresentar. Lead frio (Podium pelo Brasil, Summit para quem não conhece a Podium): pediu um tempo curto e concreto (\"dois minutinhos\") e, se o cliente estava ocupado, marcou horário em vez de despejar o evento. Aluno (Cash Experience): fez um comentário pessoal e ESCUTOU a resposta"],
+    ["rap_sem_desculpa","NÃO pediu desculpa por ligar nem usou tom de quem está atrapalhando"],
   ]},
-  { grupo: "2. Segurar a linha", peso: 10, chave: "segurar", itens: [
-    ["seg_curto",        "Respondeu curto à defesa dele e voltou para a pergunta, em vez de discursar"],
-    ["seg_remarcou",     "Se ele disse que está atendendo ou sem tempo, marcou hora para ligar de volta em vez de apresentar o evento correndo. NA se ele não alegou falta de tempo"],
-    ["seg_acolheu",      "Acolheu a objeção antes de qualquer argumento (\"faz sentido\", \"entendo\", \"tranquilo\") e devolveu com pergunta. NA se não houve objeção"],
-    ["seg_nao_recuou",   "NÃO recuou na primeira objeção e NÃO entrou em discussão ou rebate. NA se não houve objeção"],
-    ["seg_nao_dono",     "Se quem atendeu NÃO é o dono, não explicou o evento para a pessoa errada e perguntou que horas o dono está ou se o WhatsApp é com ele. NA quando falou direto com o dono"],
+  { grupo: "2. Gancho certo do evento", peso: 10, chave: "gancho", itens: [
+    ["gan_marco",       "Parabenizou o cliente pelo marco que vale para ESTE evento: implementação concluída (Cash Experience), nota e avaliações no Google (Podium pelo Brasil), ou o momento da barbearia (Summit)"],
+    ["gan_motivo",      "Explicou por que está ligando para ELE (foi selecionado, desbloqueou o acesso, a barbearia se destacou)"],
+    ["gan_regra",       "Respeitou a regra de abertura do evento descrita no contexto (seção 6)"],
   ]},
   { grupo: "3. Entender o momento", peso: 10, chave: "momento", itens: [
-    ["mom_aberta",       "Fez pergunta ABERTA sobre o momento do negócio (o que mais toma a cabeça dele, o que mais quer para os próximos meses). Só pergunta fechada é false"],
-    ["mom_escutou",      "Escutou a resposta sem interromper e sem emendar a apresentação do evento em cima"],
+    ["mom_aberta",      "Fez ao menos uma pergunta ABERTA sobre o momento ou o objetivo (\"o que você está buscando?\", \"qual o principal objetivo nos próximos meses?\", \"como está sendo esse início?\")"],
+    ["mom_escutou",     "Deixou o cliente responder sem interromper e sem emendar a apresentação do evento logo em seguida"],
   ]},
   { grupo: "4. Cavar a necessidade", peso: 10, chave: "cavar", itens: [
-    ["cav_aprofundou",   "Aprofundou no que ele disse com uma PERGUNTA (o que está impedindo isso de acontecer, o que ele melhoraria se pudesse escolher uma coisa)"],
-    ["cav_pergunta_nao_argumento", "Aprofundou perguntando, não argumentando. Responder a dor com um argumento de venda no lugar da pergunta é false"],
+    ["cav_follow",      "Fez pelo menos uma pergunta de aprofundamento sobre o que o cliente disse"],
+    ["cav_impedimento", "Perguntou o que está impedindo o resultado ou o que ele melhoraria primeiro (\"se pudesse melhorar uma única coisa...\")"],
   ]},
   { grupo: "5. Pergunta de visão", peso: 15, chave: "visao", itens: [
-    ["vis_fez",          "Fez a pergunta de visão em voz alta: como seria para ele resolver isso, ou se acredita que isso aceleraria os resultados dele"],
-    ["vis_ligada_dor",   "A pergunta de visão veio ligada à dor que ELE acabou de contar, com as palavras dele. Pergunta de visão genérica, que serviria para qualquer lead, é false"],
+    ["vis_pergunta",    "Fez a pergunta de visão: \"como seria para você ter acesso a empresários que já resolveram isso?\" ou variação com o mesmo sentido"],
+    ["vis_ligada",      "A pergunta de visão estava ligada à dor ou ao objetivo que o CLIENTE disse, e não era genérica"],
   ]},
-  { grupo: "6. Vender o desejo", peso: 15, chave: "desejo", itens: [
-    ["des_um_tema",      "Escolheu UM tema ligado ao que ele contou, em vez de listar a grade inteira"],
-    ["des_quem_ensina",  "Ligou o tema a quem ensina — o mentor ou o perfil de empresário que já resolveu aquilo"],
-    ["des_sem_inventar", "NÃO citou palestrante, faturamento ou número que não esteja no material oficial da edição"],
-    ["des_sem_desmerecer", "NÃO desmereceu quem o cliente segue nem disse que outro mentor do mercado \"foi nosso aluno\". NA se ele não citou ninguém"],
+  { grupo: "6. Vender o desejo, não o evento", peso: 15, chave: "desejo", itens: [
+    ["des_conectou",    "Ligou um mentor ou um tema do evento à dor ou ao objetivo que o cliente contou (\"aquilo que você falou de...\")"],
+    ["des_transformacao","Vendeu resultado e transformação (crescer, sair da cadeira, montar equipe, faturar mais), não palestra"],
+    ["des_sem_logistica","NÃO gastou o pitch em almoço, banquete, chef, happy hour, cronograma ou endereço. Citar a logística em uma frase quando o cliente pergunta não conta como falha"],
   ]},
   { grupo: "7. Apresentação curta", peso: 10, chave: "apresentacao", itens: [
-    ["apr_curta",        "Apresentou o evento de forma curta, deixando curiosidade — não detalhou programação nem logística"],
-    ["apr_sem_logistica", "NÃO fez pitch de almoço, banquete, chef, happy hour, horário ou endereço. Isso vai por escrito"],
-    ["apr_resultado",    "Vendeu o RESULTADO — olhar o negócio de fora, sair com o primeiro passo decidido — e não a experiência em si"],
+    ["apr_cliente_cedo","O cliente teve espaço para falar logo no começo: a executiva fez uma pergunta já na primeira ou segunda fala"],
+    ["apr_sem_monologo","Nenhuma fala da executiva passou de cerca de 6 frases seguidas sem uma pergunta"],
+    ["apr_curiosidade", "Apresentou o evento de forma objetiva, deixando curiosidade, sem explicar tudo"],
   ]},
-  { grupo: "8. Escassez", peso: 5, chave: "escassez", itens: [
-    ["esc_disse",        "Disse que a vaga é limitada ou que são poucas barbearias por edição"],
-    ["esc_sem_numero",   "NÃO inventou número de vagas, valor ou parcelamento que não tem confirmado. Se ele perguntou o valor, disse que manda por escrito e voltou à dor dele"],
+  { grupo: "8. Escassez e preço", peso: 5, chave: "escassez", itens: [
+    ["esc_usou",        "Usou escassez: vagas limitadas, edição especial, turma fechando"],
+    ["esc_preco",       "Quando o cliente perguntou o valor, NÃO citou número: disse que manda o investimento por escrito e voltou para a conversa. NA se o cliente não perguntou"],
   ]},
   { grupo: "9. Fechamento e compromisso", peso: 10, chave: "fechamento", itens: [
-    ["fec_pergunta",     "Fez a pergunta de fechamento em voz alta (como seria para você participar / estar nessa edição) e PAROU para ouvir"],
-    ["fec_proximo_passo", "Saiu com um próximo passo com DIA E HORA — link e inscrição agora, ou retorno marcado. \"Te mando e você me fala\" é false"],
-    ["fec_acompanhante", "Se ele topou, perguntou se vem sozinho ou com alguém da gestão. NA se ele não topou na ligação"],
+    ["fec_pergunta",    "Fez uma pergunta de fechamento em voz alta: \"como seria para você participar?\", \"qual turma faz mais sentido?\", \"posso contar com você?\""],
+    ["fec_objecao",     "Acolheu a objeção antes de argumentar e voltou ao que o cliente contou, sem rebater e sem recuar na primeira. NA se não houve objeção"],
+    ["fec_quem_decide", "Quando o cliente citou alguém que decide junto (esposa, sócio), incluiu essa pessoa pelo nome no convite. NA se não citou"],
+    ["fec_retorno",     "Se o cliente não decidiu na ligação, saiu com dia e hora de retorno combinados (\"te mando e você me fala\" é false). NA se o cliente decidiu"],
+  ]},
+  { grupo: "10. Postura", peso: 5, chave: "postura", itens: [
+    ["pos_firmeza",     "Falou com firmeza e convicção, sem hesitar nem soar lida (\"isso é pra você\")"],
+    ["pos_sem_vetadas", "NÃO usou frases vetadas pela gestão (dizer que o valor 'não fica nada pra gente', dizer que outro mentor do mercado 'foi nosso aluno') e NÃO inventou dado, nome ou número"],
   ]},
 ];
 
@@ -1057,7 +1032,7 @@ function notaDoCriterio(marcado, criterio) {
 function lerAvaliacao(result) {
   const crit = result && result.criterios;
   if (!crit) return null;
-  for (const [k] of CRITERIOS) if (!crit[k]) return null;  // exige o feedback das 7 etapas
+  for (const [k] of CRITERIOS) if (!crit[k]) return null;  // exige o feedback das 10 etapas
 
   // O percentual do script e somado do checklist, nunca lido do modelo.
   const marcado = (result.script && result.script.checklist) || {};
@@ -1068,8 +1043,6 @@ function lerAvaliacao(result) {
   for (const [k] of CRITERIOS) {
     const d = notaDoCriterio(marcado, k);
 
-    // Em eventos não há teto de implicação nem desqualificação por CNPJ: o
-    // script manda cavar a necessidade, e qualquer dono de barbearia é público.
     notas[k] = d.nota;
     detalhe[k] = d;
     if (d.nota !== "NA") pontuadas.push(d.nota);
@@ -1096,17 +1069,15 @@ endBtn.addEventListener("click", async () => {
   sessionEnded = true; endBtn.setAttribute("disabled",""); micBtn.setAttribute("disabled","");
   setStatus("Gerando avaliação...", "thinking");
 
-  const transcript = history.map(m => (m.role === "user" ? "SDR" : "Barbeiro (" + persona.name + ")") + ": " + m.content).join("\n");
+  const transcript = history.map(m => (m.role === "user" ? "Executiva" : "Cliente (" + persona.name + ")") + ": " + m.content).join("\n");
   const numTurnos = history.filter(m => m.role === "user").length;
-  // Extrair faturamento e CNPJ do contexto para o gabarito
-  const fatGab = (persona.contexto.match(/[Ff]atura\s+(R\$[\d.,]+k?\/mês)/) || [])[1] || "não informado";
-  const cnpjGab = persona.contexto.includes("SEM CNPJ") ? "NÃO tem CNPJ" : "tem CNPJ ativo";
-  const socioGab = persona.contexto.includes("sócio") ? "tem sócio" : "sem sócio";
+  const ev = EVENTOS[persona.evento];
   const gabarito =
-    "GABARITO: " + persona.name + " | " + persona.shop + " | " + persona.city + "\n" +
-    "Faturamento: " + fatGab + " | CNPJ: " + cnpjGab + " | " + socioGab + "\n" +
+    "GABARITO: " + persona.name + " (" + (persona.papel || "dono") + ") | " + persona.shop + " | " + persona.city + "\n" +
+    "Situação com a Podium: " + persona.ev[persona.evento] + "\n" +
+    "Google: " + persona.google + "\n" +
     "Dor: " + persona.dor + "\n" +
-    "DISC: " + persona.disc + " | Comportamento: " + persona.comportamento.substring(0,120) + "...\n";
+    "DISC: " + persona.disc + " | Comportamento: " + persona.comportamento.substring(0,160) + "...\n";
 
   // O texto do checklist no prompt e gerado da mesma constante que faz a soma,
   // para prompt e pontuacao nunca divergirem.
@@ -1116,152 +1087,75 @@ endBtn.addEventListener("click", async () => {
   ).join("\n\n");
 
   const evalPrompt =
-`# AGENTE DE ANÁLISE DE LIGAÇÕES — PRÉ-VENDAS PODIUM
-## SCRIPT DA EQUIPE DE EVENTOS — VENDER O INGRESSO (ROLEPLAY)
+`# AGENTE DE ANÁLISE DE LIGAÇÕES — EQUIPE DE EVENTOS PODIUM
+## SCRIPT OFICIAL — VENDER O EVENTO (ROLEPLAY)
 
 ## 1. IDENTIDADE E MISSÃO
-Você é um analista especialista em pré-vendas treinado no método NEPQ.
-Avalie a performance do SDR com base na transcrição desta ligação de roleplay e escreva o FEEDBACK PARA O SDR na voz de um líder de pré-vendas experiente falando diretamente com seu liderado. Brutalmente direto, técnico, com dica prática de melhoria em cada etapa.
-Você NÃO é um agente de elogios. Você é um auditor de qualidade.
-Notas altas são exceção — exigem evidência explícita na transcrição.
+Você é um líder da equipe de eventos avaliando uma ligação de roleplay em que a executiva convida um dono de barbearia para um evento presencial.
+Escreva o FEEDBACK PARA A EXECUTIVA na voz do líder dela: direto, técnico, com uma dica prática em cada etapa.
+Você NÃO é um agente de elogios. Notas altas exigem evidência explícita na transcrição.
 
-## 2. REGRA FUNDAMENTAL
-O SDR recebe o feedback como se viesse do líder direto dele.
-- Voz em segunda pessoa ("você fez", "você deixou de fazer")
-- Tom direto, sem rodeios, sem suavizar, mas sempre com a dica prática do que fazer na próxima ligação
-- Não proteja o SDR do desconforto necessário para evoluir
-- Elogio só com trecho que justifique — em uma frase, nunca um parágrafo
-- Quando o SDR acertar, diga: "é esse padrão que eu quero ver"
+## 2. O QUE A GESTÃO MAIS COBRA
+- Conexão antes de vender. Ouvir mais e falar menos.
+- Perguntas melhores: descobrir objetivo, sonho e desafio do cliente.
+- A PERGUNTA DE VISÃO é a etapa que o gestor mais reforça: "como seria para você ter acesso a empresários que já resolveram exatamente esse problema?". Aqui ela é OBRIGATÓRIA e boa.
+- Vender transformação, não palestra, almoço ou cronograma. Não explicar tudo do evento: criar curiosidade.
+- Escassez e postura de vendedora ("isso é pra você").
+- Valores ficam FORA deste treino. Não avalie preço, parcelamento nem número de vagas. Só avalie se, quando o cliente perguntou o valor, ela segurou sem citar número.
 
-## 3. REGRAS GLOBAIS INVIOLÁVEIS
-
-REGRA 1 — AS CINCO REGRAS DA EQUIPE DE EVENTOS
-1. Pergunte antes de explicar.
-2. O cliente fala antes de 1 minuto.
-3. Venda o resultado, não o almoço.
-4. Sem valores na ligação.
-5. Sempre saia com um próximo passo, com dia e hora.
-Diferente da ligação de consultoria, AQUI O SDR CAVA a necessidade: a etapa 4 manda aprofundar no que o lead contou. O que não pode é aprofundar ARGUMENTANDO — o aprofundamento é com pergunta.
-
-REGRA 2 — LINHA LÓGICA
-Todos os critérios devem estar conectados ao MESMO problema principal identificado na ligação. Se a dor principal muda entre os critérios, isso é inconsistência — indique explicitamente no feedback.
-
-REGRA 3 — CITAÇÕES OBRIGATÓRIAS
-Todo trecho citado deve ser LITERAL, com no máximo 30 palavras.
-Sempre identifique 🟢 SDR ou 🟣 CLIENTE seguido do turno.
-Ausência de trecho = ausência de evidência = penalização automática.
-Esta transcrição de roleplay NÃO tem minutagem: use sempre o formato "⏱ turno #N", contando os turnos de fala a partir de 1. NUNCA invente um horário.
-
-REGRA 4 — PROLIXIDADE DO SDR
-Monitore ativamente se o SDR fala demais. Prolixidade esfria o lead e sinaliza falta de controle da conversa. Sinais:
-- Explica o produto antes de entender a dor do lead
-- Repete a mesma informação mais de uma vez na mesma etapa
-- Usa mais de 3 frases seguidas sem fazer uma pergunta
-- Responde objeção com discurso longo em vez de pergunta cirúrgica
-- Preenche silêncio do lead com mais conteúdo em vez de escuta
-- Abertura passa de 2 turnos sem engajar o lead
-Quando identificar, registre o turno, o que foi dito em excesso, o impacto real e — em UMA frase — o que deveria ter sido dito no lugar.
-NÃO É PROLIXIDADE: vender a consultoria com passo a passo, exclusividade, ganhos e sem custo (etapa 4 é o maior peso do script, tem que ser desenvolvida), nem reforçar o compromisso no fecho (etapa 7).
-A prolixidade entra só no feedback, sem peso na nota.
-
-REGRA 5 — PONTO DE PERDA DO AGENDAMENTO
-Se a ligação NÃO gerou agendamento por falha do SDR (não por desqualificação legítima: sem CNPJ nem MEI, ou negativa clara), identifique o momento exato da perda.
-Conta como falha do SDR: puxou papo antes de dizer quem é e por que ligou, para quem não conhece a Podium; apresentou o evento correndo quando o lead disse que estava atendendo, em vez de remarcar; recuou na primeira objeção; aceitou "me manda no WhatsApp" sem marcar dia e hora de retorno; explicou o evento para quem não é o dono; falou valor, vaga ou palestrante que não tem confirmado; desmereceu o mentor que o lead segue.
-
-REGRA 6 — VOZ DO LÍDER
-Todo feedback dos Critérios 1 a 4 é escrito em segunda pessoa. Estrutura de cada etapa:
-1. O que você fez certo — uma frase, só se houver trecho que prove
-2. O que você errou — erro nomeado + turno + impacto na ligação
-3. Na próxima: dica prática, de preferência com a frase exata que o SDR deveria ter usado
-Proibido: voz passiva ou impessoal; suavizadores ("mas no geral foi bom"); crítica sem dica de correção; elogio em parágrafo.
+## 3. REGRAS
+REGRA 1 — CITAÇÕES: todo trecho citado é LITERAL, com no máximo 30 palavras, identificado com 🟢 EXECUTIVA ou 🟣 CLIENTE e "⏱ turno #N" (conte os turnos de fala a partir de 1; não existe minutagem, nunca invente horário). Sem trecho = sem evidência.
+REGRA 2 — MONÓLOGO: registre quando a executiva falar mais de cerca de 6 frases seguidas sem perguntar nada, quando apresentar o evento antes de entender o cliente, ou quando gastar o pitch em logística. Registre o turno, o impacto e, em UMA frase, o que deveria ter dito.
+REGRA 3 — PONTO DE PERDA: se a ligação terminou sem fechamento nem retorno marcado por falha da executiva, identifique o momento exato.
+REGRA 4 — VOZ DO LÍDER: segunda pessoa ("você fez", "você deixou de fazer"). Estrutura por etapa: o que fez certo (uma frase, só com trecho); o que errou + turno + impacto; "Na próxima:" com a frase exata. Sem suavizador, sem elogio em parágrafo.
 
 ## 4. ORDEM DE EXECUÇÃO
-Cumpra na ordem, ANTES de escrever qualquer nota. Nota atribuída antes desta varredura sai inflada.
-1. Numere os turnos de fala.
-2. Liste todas as perguntas do SDR e marque cada uma como aberta ou fechada.
-3. Liste todas as dores verbalizadas pelo lead, com trecho literal, e marque ESPONTÂNEA ou INDUZIDA.
-4. Marque onde cada etapa do script começa e termina — ou registre como AUSENTE.
-5. Localize os trechos que vão sustentar cada nota. Sem trecho localizado, a nota é 0.
-6. Só então atribua as notas.
+1. Numere os turnos. 2. Liste as perguntas da executiva e marque aberta ou fechada. 3. Liste o que o cliente contou de objetivo e dor, marcando ESPONTÂNEO ou PERGUNTADO. 4. Marque onde cada etapa começa e termina, ou AUSENTE. 5. Localize os trechos. 6. Só então marque o checklist.
+Ajuste de roleplay: avalie só a executiva. Se o cliente simulado entregou a dor sem ser perguntado, isso não é mérito dela. Se ele saiu do personagem, ignore o trecho.
 
-Ajuste de roleplay: avalie exclusivamente o SDR. Se o lead simulado entregou a dor sem que o SDR perguntasse, isso não é mérito do SDR — a Investigação não passa de 2. Se o lead simulado se contradisse ou saiu do personagem, ignore o trecho e não penalize o SDR. Etapa não alcançada porque o treino foi interrompido = "NA", nunca 0.
-
-## 5. ESCALA DE NOTAS (0 a 5, para todos os critérios)
-5 = Excelência. Trecho prova profundidade real, personalização à dor específica e conexão clara com o contexto do lead.
-4 = Bom. Evidência clara, faltou exatamente UM ponto identificável.
-3 = Regular. Iniciou mas não aprofundou, OU não conectou à dor real, OU executou mecanicamente.
-2 = Fraco. Superficial, genérico ou fora de ordem.
-1 = Muito fraco. Tentativa identificável sem resultado prático.
-0 = Ausente. Sem trecho que evidencie a etapa.
-"NA" = ligação interrompida antes dessa etapa.
-Em dúvida entre duas notas, atribua a MENOR.
-Fluência, simpatia e ritmo NÃO influenciam a nota.
-
-## 6. CHECKLIST DO ROTEIRO
-Marque cada item abaixo com true, false ou "NA". NÃO calcule percentual nenhum: o percentual é somado fora daqui a partir das suas marcações, e qualquer número que você devolver será ignorado.
-- true = o SDR fez, e existe trecho na transcrição que prova
-- false = o SDR não fez, ou fez de um jeito que não conta
-- "NA" = a etapa não existiu nesta ligação e isso não é falha do SDR. Exemplos: o lead nunca objetou; a ligação foi legitimamente encerrada por falta de CNPJ e as etapas seguintes deixaram de existir.
-Em dúvida entre true e false, marque false. "NA" é só para etapa inexistente — nunca para etapa que o SDR simplesmente deixou de fazer.
-
-QUANDO USAR "NA" NESTA LIGAÇÃO:
-- O lead não levantou objeção nenhuma → os itens de objeção da etapa 2 são NA.
-- O lead não alegou falta de tempo → seg_remarcou é NA.
-- Quem atendeu era o próprio dono → seg_nao_dono é NA.
-- O lead é frio e não aluno → ab_parabenizou é NA. O lead é aluno → ab_motivo_antes_papo é NA.
-- O lead não citou nenhum outro mentor ou evento → des_sem_desmerecer é NA.
-- O lead não topou na ligação → fec_acompanhante é NA. Isso NÃO zera o fechamento: um lead que não decidiu na hora mas ficou com dia e hora marcados para o retorno cumpriu o próximo passo.
+## 5. CHECKLIST
+Marque cada item com true, false ou "NA". NÃO calcule percentual nem nota: tudo é somado fora daqui.
+- true = fez, com trecho que prova
+- false = não fez, ou fez de um jeito que não conta
+- "NA" = a situação não existiu (o cliente não objetou, não perguntou o valor, decidiu na hora). Nunca use NA para etapa que ela simplesmente pulou.
+Em dúvida entre true e false, marque false.
+Se o cliente era quem atende o telefone e não decide (funcionário, parente), o certo é conseguir rápido o horário e o canal do dono sem explicar o evento para quem não decide: nesse caso marque "NA" nas etapas 3 a 9 que deixaram de existir e avalie rapport, gancho e postura.
 
 ` + checklistTexto + `
 
-## 7. AS NOVE ETAPAS DA LIGAÇÃO DE EVENTOS
-Use-as para escrever o feedback no tom certo — a nota vem do checklist.
+## 6. CONTEXTO DESTE ROLEPLAY
+Evento: ` + ev.label + `
+Público do evento: ` + ev.publico + `
+Gancho esperado: ` + ev.gancho + `
+Regra de abertura (item gan_regra): ` + ev.regra + `
+Promessa do evento: ` + ev.promessa + `
+` + (ev.mentores ? "Mentores confirmados deste evento: " + ev.mentores + ". Citar outro nome como palestrante é inventar dado (pos_sem_vetadas = false).\n" : "Os palestrantes do Summit não estão definidos neste treino: não cobre nomes, e não marque falha por eles.\n") + gabarito + `
+Turnos de fala da executiva nesta call: ` + numTurnos + `
 
-1. ABERTURA (15%) — quem é, por que ligou PARA ELE com o dado dele, e o pedido de dois minutos. Para lead frio, o motivo vem antes de qualquer papo: quem não conhece a Podium ouve "como tá o movimento?" como vendedor enrolando. Para o aluno do Cash Experience, parabenizar pela implementação é obrigatório — é de onde vem o convite.
-2. SEGURAR A LINHA (10%) — a primeira resposta costuma ser defesa. Responder curto e voltar para a pergunta. Se ele está ocupado, remarcar em vez de apresentar correndo. Se quem atendeu não é o dono, não explicar o evento: descobrir quando o dono está.
-3. ENTENDER O MOMENTO (10%) — pergunta aberta e escuta, sem emendar a apresentação.
-4. CAVAR A NECESSIDADE (10%) — aprofundar no que ele disse, com UMA pergunta. Não é hora de argumentar.
-5. PERGUNTA DE VISÃO (15%) — a etapa que a gestão mais cobra. "Como seria para você...?" ligada à dor que ele acabou de contar, com as palavras dele.
-6. VENDER O DESEJO, NÃO O EVENTO (15%) — responder a dor com quem vai ensinar aquilo. Um tema, não a grade inteira. Nunca citar palestrante ou número fora do material oficial, nem desmerecer quem ele segue.
-7. APRESENTAÇÃO CURTA (10%) — no máximo meio minuto, vendendo o resultado. Almoço, chef, horário e endereço vão por escrito.
-8. ESCASSEZ (5%) — vaga limitada, sem inventar número. Perguntou valor: manda por escrito e volta à dor dele.
-9. FECHAMENTO E COMPROMISSO (10%) — pergunta de fechamento em voz alta e pausa. Sair com DIA E HORA: "te mando e você me fala" não é próximo passo.
-
-## 8. CONTEXTO DESTE ROLEPLAY
-`+ gabarito + `
-- O SDR é da equipe de EVENTOS da Podium Educação. O objetivo da ligação é VENDER O INGRESSO de um evento presencial — não é agendar consultoria e não é vender sistema.
-- São três eventos, e o contexto da persona diz qual é:
-  PODIUM PELO BRASIL — encontro regional. Só para quem NÃO é aluno. O lead é frio: nunca ouviu falar da Podium. O gancho é o destaque da barbearia no Google da região (nota e avaliações). Nunca tratar como aluno nem citar o sistema.
-  CASH EXPERIENCE — imersão de 2 dias em Curitiba. Só para ALUNOS que concluíram a implementação do Cash Barber. Parabenizar pela implementação é obrigatório: é de onde vem o convite.
-  SUMMIT — o maior encontro, aberto a alunos e não alunos. O SDR diz quem é e que evento é, e só depois descobre se o lead já conhece a Podium, adaptando a partir daí.
-- O VALOR DO INGRESSO NÃO É DITO NA LIGAÇÃO. Perguntou quanto custa: o certo é confirmar que é um evento com investimento, dizer que manda por escrito e voltar à dor dele. Falar número, parcelamento ou quantidade de vagas sem confirmação é erro.
-- O próximo passo é dia e hora: ou a inscrição agora com o link, ou um retorno marcado. "Te mando e você me fala" não vale.
-- Se quem atendeu o telefone NÃO for o dono, o certo é não explicar o evento e descobrir quando o dono está.
-
-## 9. FORMATO DE SAÍDA
-Responda SOMENTE o JSON abaixo, sem markdown e sem texto fora dele. O objeto "checklist" precisa conter TODOS os itens da seção 6, cada um com true, false ou "NA" — item ausente é tratado como não avaliado.
-NÃO devolva nota numérica em critério nenhum. As notas de 0 a 5 são calculadas fora daqui, a partir das suas marcações no checklist. A escala da seção 5 e as âncoras da seção 7 continuam valendo como referência para você escrever o feedback no tom certo — não para atribuir número. Toda "nota" é um número de 0 a 5 ou a string "NA". Todo "trecho" é citação literal de no máximo 30 palavras, prefixada por 🟢 SDR ou 🟣 CLIENTE e por "⏱ turno #N"; use "" quando não houver trecho.
+## 7. FORMATO DE SAÍDA
+Responda SOMENTE o JSON abaixo, sem markdown e sem texto fora dele. O objeto "checklist" precisa conter TODOS os itens da seção 5. NÃO devolva nota numérica em critério nenhum.
 {"sintese":"uma frase do líder sobre a ligação inteira",
 "criterios":{
-"abertura":{"feedback":"voz do líder: o que fez certo (se houver) / o que errou + turno + impacto","trecho":"","proximo":"Na próxima: [frase exata]"},
-"segurar":{"feedback":"","trecho":"","proximo":""},
+"rapport":{"feedback":"","trecho":"","proximo":"Na próxima: [frase exata]"},
+"gancho":{"feedback":"","trecho":"","proximo":""},
 "momento":{"feedback":"","trecho":"","proximo":""},
 "cavar":{"feedback":"","trecho":"","proximo":""},
 "visao":{"feedback":"","trecho":"","proximo":""},
-"desejo":{"feedback":"","trecho":"","proximo":"","tema_escolhido":"o tema que ele ligou à dor, ou vazio"},
+"desejo":{"feedback":"","trecho":"","proximo":""},
 "apresentacao":{"feedback":"","trecho":"","proximo":""},
 "escassez":{"feedback":"","trecho":"","proximo":""},
-"fechamento":{"feedback":"","trecho":"","proximo":"","proximo_passo":"o dia e hora combinados, ou NENHUM"}},
+"fechamento":{"feedback":"","trecho":"","proximo":""},
+"postura":{"feedback":"","trecho":"","proximo":""}},
 "prolixidade":{"detectada":false,"turno":"","observacao":"o que foi dito em excesso e o impacto","deveria_ter_dito":"uma frase"},
-"ponto_perda":{"houve":false,"turno":"","o_que_aconteceu":"1-2 frases","trecho":"","causa_raiz":"a falha técnica específica","o_que_fazer":"uma ação concreta em segunda pessoa"},
-"script":{"checklist":{"nome_do_item":true},"observacao":"1-2 frases sobre o que mais custou aderência ao roteiro"},
+"ponto_perda":{"houve":false,"turno":"","o_que_aconteceu":"1-2 frases","trecho":"","causa_raiz":"a falha específica","o_que_fazer":"uma ação concreta em segunda pessoa"},
+"script":{"checklist":{"nome_do_item":true},"observacao":"1-2 frases sobre o que mais custou aderência ao script"},
 "resumo_lider":"3 a 5 frases: padrão identificado, onde é forte, onde é fraco, e UM foco único e mensurável para a próxima ligação. Termine sempre com o foco."}
 
-## 10. CONVERSA
+## 8. CONVERSA
 ` + transcript;
 
   try {
-    const resposta = await callAPI([{ role: "user", content: evalPrompt }], "Avaliador de SDRs. Responda apenas JSON válido e completo.", { temperature: 0, task: "avaliacao", max_tokens: 16000, comMeta: true });
+    const resposta = await callAPI([{ role: "user", content: evalPrompt }], "Avaliador da equipe de eventos. Responda apenas JSON válido e completo.", { temperature: 0, task: "avaliacao", max_tokens: 16000, comMeta: true });
     const raw = resposta.texto;
     const modeloAvaliador = resposta.modelo;
     let cleaned = raw.replace(/```json|```/g, "").trim();
@@ -1324,7 +1218,7 @@ NÃO devolva nota numérica em critério nenhum. As notas de 0 a 5 são calculad
 // Fila local de envios pendentes. No celular a pagina e suspensa quando a tela
 // apaga ou o SDR troca de app, e o fetch do save morre junto — a nota sumia sem
 // ninguem saber. O payload fica guardado e sobe na proxima vez que a pagina abrir.
-const PENDENTES = "roleplay_pendentes";
+const PENDENTES = "roleplay_pendentes";  // mesma fila do simulador de produto: o payload ja diz a regua
 
 function guardarPendente(payload) {
   try {
@@ -1360,7 +1254,7 @@ async function saveSimulationResult(result, av, transcript, modeloAvaliador) {
     persona_shop: persona.shop,
     persona_city: persona.city,
     level: persona.difficulty,
-    rubrica_versao: "v4.1",
+    rubrica_versao: "eventos-v1/" + persona.evento,
     modelo_avaliador: modeloAvaliador || null,
     media_criterios: av.media,
     script_pct: av.scriptPct,
@@ -1443,18 +1337,24 @@ function renderScore(result) {
         ' — <span style="color:' + col + '">' + (n === "NA" ? "NA" : n + "/5") + '</span>' +
         (av.detalhe[k] && av.detalhe[k].aplicaveis
           ? '<span style="color:#666;font-weight:400"> · ' + av.detalhe[k].feitos + '/' + av.detalhe[k].aplicaveis + ' itens</span>' : '') +
-
+        (av.detalhe[k] && av.detalhe[k].zeradoPorDesqualificacao
+          ? '<span style="color:#f87171;font-weight:400"> · zerado: agendou lead sem CNPJ</span>' : '') +
+        (av.detalhe[k] && av.detalhe[k].tetoPorImplicacao
+          ? '<span style="color:#f87171;font-weight:400"> · teto 2: fez pergunta de implicação</span>' : '') +
         '</div>' +
       '<div style="font-size:13px;color:#ccc;line-height:1.7;margin-bottom:8px">' + esc(c.feedback) + '</div>';
 
     html += trechoHtml("💬", c.trecho);
-    if (k === "desejo" && c.tema_escolhido) {
-      html += '<div style="font-size:12px;color:#a78bfa;margin:6px 0">🎯 Tema ligado à dor: ' + esc(c.tema_escolhido) + '</div>';
+    if (k === "validar" && c.dados_faltantes && c.dados_faltantes.length) {
+      html += '<div style="font-size:12px;color:#f87171;margin:6px 0">Não validou: ' + esc(c.dados_faltantes.join(", ")) + '</div>';
     }
-    if (k === "fechamento" && c.proximo_passo) {
-      const pp = String(c.proximo_passo);
-      const vago = /^nenhum$/i.test(pp.trim());
-      html += '<div style="font-size:12px;color:' + (vago ? "#f87171" : "#5cb85c") + ';margin:6px 0">📅 Próximo passo: ' + esc(pp) + '</div>';
+    if (k === "mapear" && c.implicacao_detectada) {
+      html += '<div style="font-size:12px;color:#f87171;margin:6px 0">🚫 Pergunta de implicação: "' + esc(c.implicacao_detectada) + '"</div>';
+    }
+    if (k === "proximo" && c.distancia_agendamento) {
+      const d = String(c.distancia_agendamento);
+      const ok = /^D[012]$|^NA$/i.test(d.trim());
+      html += '<div style="font-size:12px;color:' + (ok ? "#5cb85c" : "#f87171") + ';margin:6px 0">📅 Agendamento: ' + esc(d) + '</div>';
     }
     if (c.proximo) html += '<div style="font-size:13px;color:#5cb85c;margin-top:6px">🛠 ' + esc(c.proximo) + '</div>';
     html += '</div>';
@@ -1498,10 +1398,10 @@ function renderScore(result) {
     html += '</div>';
   }
 
-  // Ponto de perda do agendamento (REGRA 5)
+  // Ponto de perda da venda (REGRA 3)
   const pp = result.ponto_perda || {};
   if (pp.houve) {
-    html += '<div class="fb-block fb-danger" style="margin-top:12px"><h4>🚨 Ponto de perda do agendamento' +
+    html += '<div class="fb-block fb-danger" style="margin-top:12px"><h4>🚨 Ponto de perda da venda' +
       (pp.turno ? ' — ' + esc(pp.turno) : "") + '</h4>' +
       '<p>' + esc(pp.o_que_aconteceu) + '</p>';
     if (pp.trecho) html += trechoHtml("💬", pp.trecho);
@@ -1538,10 +1438,12 @@ async function init() {
   const effectiveLevel = selectedLevel === "aleatorio"
     ? ["facil","medio","dificil"][Math.floor(Math.random()*3)]
     : selectedLevel;
-  const pool = PERSONAS[selectedEvento][effectiveLevel];
+  const pool = PERSONAS[effectiveLevel];
   const base = pool[Math.floor(Math.random()*pool.length)];
-  persona = { ...base, difficulty: effectiveLevel, evento: selectedEvento,
-              eventoNome: EVENTO_META[selectedEvento].nome };
+  const evento = selectedEvent === "aleatorio"
+    ? ["summit","ppb","cash"][Math.floor(Math.random()*3)]
+    : selectedEvent;
+  persona = { ...base, difficulty: effectiveLevel, evento };
 
   history = []; turnCount = 0; sessionEnded = false; isProcessing = false; isListening = false;
   chatWin.innerHTML = "";
