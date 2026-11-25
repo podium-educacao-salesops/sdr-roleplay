@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- A página muda com frequência e o time acessa pelo mesmo link: sem isso o
+     navegador serve a versão antiga e a mudança parece não ter subido. -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Histórico — Simulador de Eventos</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0d0d0d; color: #e8e8e8;
+    min-height: 100vh; padding: 2rem 1rem;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  #app { width: 100%; max-width: 900px; }
+  .title { font-size: 22px; font-weight: 500; color: #fff; margin-bottom: 4px; }
+  .sub { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+
+  .filters { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+  .filters select, .filters button {
+    padding: 8px 12px; font-size: 13px; border-radius: 8px;
+    border: 1px solid #2a2a2a; background: #1a1a1a; color: #e8e8e8; font-family: inherit; cursor: pointer;
+  }
+  .filters button:hover { background: #222; }
+
+  .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .sum-card { background: #1a1a1a; border: 0.5px solid #2a2a2a; border-radius: 10px; padding: 0.9rem 1rem; }
+  .sum-card .lbl { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .sum-card .val { font-size: 22px; font-weight: 500; color: #fff; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; padding: 10px 12px; color: #888; font-weight: 500;
+    border-bottom: 1px solid #2a2a2a; white-space: nowrap;
+  }
+  tbody td { padding: 10px 12px; border-bottom: 0.5px solid #1e1e1e; color: #ddd; }
+  tbody tr:hover { background: #151515; }
+  .lvl-facil { color: #5cb85c; }
+  .lvl-medio { color: #f5c518; }
+  .lvl-dificil { color: #f87171; }
+  .score { font-weight: 600; }
+  .score-good { color: #5cb85c; }
+  .score-mid { color: #f5c518; }
+  .score-low { color: #f87171; }
+
+  #aviso-modelo {
+    margin-bottom: 1.25rem; padding: 0.85rem 1rem; border-radius: 10px;
+    background: #2a1f00; border: 0.5px solid #5a4a1a; color: #e8d9a8;
+    font-size: 13px; line-height: 1.6;
+  }
+  #aviso-modelo b { color: #f5c518; }
+  #por-etapa { margin-bottom: 1.5rem; }
+  .etapas-titulo { font-size: 13px; color: #888; margin-bottom: 8px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .etapas-pior { font-size: 12px; color: #f87171; }
+  .etapas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .etapa-card { background: #141414; border: 0.5px solid #222; border-radius: 10px; padding: 0.7rem 0.85rem; }
+  .etapa-card.etapa-pior { border-color: #5a2a2a; }
+  .etapa-card .lbl { font-size: 11px; color: #777; margin-bottom: 3px; }
+  .etapa-card .val { font-size: 20px; font-weight: 500; }
+  .etapa-card .denom { font-size: 12px; color: #555; }
+
+  #empty, #loading { color: #666; font-size: 14px; padding: 2rem 0; text-align: center; }
+  #table-wrap { overflow-x: auto; background: #111; border: 0.5px solid #222; border-radius: 12px; padding: 0.5rem; }
+
+  .veredicto { font-style: italic; color: #999; max-width: 320px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="title">Histórico — Simulador de Eventos</div>
+  <div class="sub">Aderência ao script oficial da equipe de eventos (Summit, Podium pelo Brasil, Cash Experience), nota 0–5 por etapa. Os números medem quais etapas foram cumpridas — a qualidade da execução está no feedback de cada simulação.</div>
+
+  <div class="filters">
+    <select id="sdr-filter" onchange="applyFilter()">
+      <option value="">Todos os SDRs</option>
+    </select>
+    <select id="nivel-filter" onchange="applyFilter()">
+      <option value="">Todos os níveis</option>
+      <option value="facil">Fácil</option>
+      <option value="medio">Médio</option>
+      <option value="dificil">Difícil</option>
+    </select>
+    <select id="persona-filter" onchange="applyFilter()">
+      <option value="">Todas as personas</option>
+    </select>
+    <select id="periodo-filter" onchange="applyFilter()">
+      <option value="">Todo o período</option>
+      <option value="7">Últimos 7 dias</option>
+      <option value="30">Últimos 30 dias</option>
+    </select>
+    <button onclick="limparFiltros()">✕ Ver todas</button>
+    <button onclick="load()">↻ Atualizar</button>
+  </div>
+
+  <div class="summary-cards" id="summary"></div>
+  <div id="aviso-modelo" style="display:none"></div>
+  <div id="por-etapa" style="display:none"></div>
+
+  <div id="loading">Carregando...</div>
+  <div id="empty" style="display:none">Nenhuma simulação registrada ainda.</div>
+  <div id="table-wrap" style="display:none">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Executiva</th>
+          <th>Evento · Persona</th>
+          <th>Nível</th>
+          <th title="1. Rapport e conexão">Rapp.</th>
+          <th title="2. Gancho certo do evento">Gancho</th>
+          <th title="3. Entender o momento">Mom.</th>
+          <th title="4. Cavar a necessidade">Cavar</th>
+          <th title="5. Pergunta de visão">Visão</th>
+          <th title="6. Vender o desejo">Desejo</th>
+          <th title="7. Apresentação curta">Apres.</th>
+          <th title="8. Escassez e preço">Escas.</th>
+          <th title="9. Fechamento e compromisso">Fech.</th>
+          <th title="10. Postura">Post.</th>
+          <th title="Aderência ao roteiro: fração das etapas cumpridas, não qualidade de execução">Aderência</th>
+          <th>Script</th>
+          <th>Síntese do líder</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const API_URL = "https://withered-wildflower-db78.daiane-silvasvc.workers.dev";
+let allResults = [];
+
+function fmtDate(s) {
+  if (!s) return "—";
+  const d = new Date(s.replace(" ", "T") + "Z");
+  return d.toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", year:"2-digit", hour:"2-digit", minute:"2-digit" });
+}
+
+// Duas escalas diferentes no mesmo painel — cada uma com seu proprio corte.
+function classeCriterios(v) {
+  return v >= 4 ? "score-good" : v >= 3 ? "score-mid" : "score-low";
+}
+function classeScript(v) {
+  return v >= 80 ? "score-good" : v >= 50 ? "score-mid" : "score-low";
+}
+// BANT agora é sobre 2 pilares (Budget e Need): Authority e Timeline saíram
+// porque o roteiro do time não manda perguntar decisor nem prazo.
+function classeBant(v) {
+  return v >= 2 ? "score-good" : v >= 1 ? "score-mid" : "score-low";
+}
+function media(rows, campo) {
+  const v = rows.map(r => r[campo]).filter(n => typeof n === "number");
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+}
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// As etapas do script oficial da equipe de eventos.
+// Agrupa SDR ignorando SÓ maiúscula/minúscula. O acento NÃO pode ser ignorado:
+// "Vinicius" e "Vinícius" são duas pessoas diferentes no time, e juntá-las
+// misturaria a nota de uma na média da outra.
+const chaveSdr = n => String(n || "").trim().toLowerCase();
+
+const ETAPAS = ["rapport", "gancho", "momento", "cavar", "visao", "desejo", "apresentacao", "escassez", "fechamento", "postura"];
+const ETAPA_ROTULO = {
+  rapport: "Rapport", gancho: "Gancho", momento: "Momento", cavar: "Cavar", visao: "Visão",
+  desejo: "Desejo", apresentacao: "Apresentação", escassez: "Escassez", fechamento: "Fechamento", postura: "Postura",
+};
+const EVENTO_ROTULO = { summit: "Summit", ppb: "Podium pelo Brasil", cash: "Cash Experience" };
+const eventoDe = r => EVENTO_ROTULO[String(r.rubrica_versao || "").split("/")[1]] || "—";
+
+// Espelha o CHECKLIST_SCRIPT do eventos.html: o checklist salvo e a fonte de verdade.
+const CRITERIO_ITENS = {
+  rapport:      ["rap_identificou", "rap_conexao", "rap_sem_desculpa"],
+  gancho:       ["gan_marco", "gan_motivo", "gan_regra"],
+  momento:      ["mom_aberta", "mom_escutou"],
+  cavar:        ["cav_follow", "cav_impedimento"],
+  visao:        ["vis_pergunta", "vis_ligada"],
+  desejo:       ["des_conectou", "des_transformacao", "des_sem_logistica"],
+  apresentacao: ["apr_cliente_cedo", "apr_sem_monologo", "apr_curiosidade"],
+  escassez:     ["esc_usou", "esc_preco"],
+  fechamento:   ["fec_pergunta", "fec_objecao", "fec_quem_decide", "fec_retorno"],
+  postura:      ["pos_firmeza", "pos_sem_vetadas"],
+};
+
+function derivaDoChecklist(r, etapa) {
+  const ck = r.criterios && r.criterios.script && r.criterios.script.checklist;
+  if (!ck) return null;
+  let aplicaveis = 0, feitos = 0;
+  for (const k of (CRITERIO_ITENS[etapa] || [])) {
+    const v = ck[k];
+    if (v === "NA" || v === "na" || v == null) continue;
+    aplicaveis++;
+    if (v === true) feitos++;
+  }
+  if (!aplicaveis) return "NA";
+  return Math.round(feitos / aplicaveis * 5 * 10) / 10;
+}
+
+// A nota por etapa vem dentro da avaliacao completa, nao em coluna propria.
+// "NA" (etapa nao alcancada) nao e zero e nao entra em media nenhuma.
+function notaEtapa(r, etapa) {
+  const c = r.criterios && r.criterios.criterios && r.criterios.criterios[etapa];
+  if (c) {
+    if (c.nota === "NA" || c.nota === "na") return "NA";
+    const n = Number(c.nota);
+    if (Number.isFinite(n)) return n;
+  }
+  return derivaDoChecklist(r, etapa);
+}
+function celulaEtapa(r, etapa) {
+  const n = notaEtapa(r, etapa);
+  if (n === null) return '<td style="color:#555">—</td>';
+  if (n === "NA") return '<td style="color:#666">NA</td>';
+  return `<td class="score ${classeCriterios(n)}">${n}</td>`;
+}
+// Media da etapa no conjunto filtrado — mostra em qual etapa o time todo trava.
+function mediaEtapa(rows, etapa) {
+  const v = rows.map(r => notaEtapa(r, etapa)).filter(n => typeof n === "number");
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+}
+
+async function load() {
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("table-wrap").style.display = "none";
+  document.getElementById("empty").style.display = "none";
+  try {
+    const resp = await fetch(API_URL + "/history?limit=500");
+    const data = await resp.json();
+    allResults = (data.results || []).filter(r => String(r.rubrica_versao || "").startsWith("eventos"));
+    populateSdrFilter();
+    applyFilter();
+  } catch (e) {
+    document.getElementById("loading").textContent = "Erro ao carregar: " + e.message;
+  }
+}
+
+function populateSdrFilter() {
+  const preencher = (id, campo, rotuloTodos) => {
+    const sel = document.getElementById(id);
+    const atual = sel.value;
+    const nomes = [...new Set(allResults.map(r => r[campo]).filter(Boolean))].sort();
+    sel.innerHTML = `<option value="">${rotuloTodos}</option>` +
+      nomes.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+    sel.value = atual;
+  };
+  // Uma opção por pessoa, mostrando a grafia mais usada.
+  const porChave = {};
+  for (const r of allResults) {
+    const k = chaveSdr(r.sdr_name);
+    if (!k) continue;
+    (porChave[k] = porChave[k] || []).push(r.sdr_name);
+  }
+  const selSdr = document.getElementById("sdr-filter");
+  const atualSdr = selSdr.value;
+  selSdr.innerHTML = '<option value="">Todos os SDRs</option>' +
+    Object.entries(porChave).map(([k, nomes]) => {
+      const contagem = {};
+      for (const n of nomes) contagem[n] = (contagem[n] || 0) + 1;
+      const principal = Object.keys(contagem).sort((a, b) => contagem[b] - contagem[a])[0];
+      return { k, principal };
+    }).sort((a, b) => a.principal.localeCompare(b.principal, "pt-BR"))
+      .map(({ k, principal }) => `<option value="${esc(k)}">${esc(principal)}</option>`).join("");
+  selSdr.value = atualSdr;
+  preencher("persona-filter", "persona_name", "Todas as personas");
+}
+
+const FILTROS = ["sdr-filter", "nivel-filter", "persona-filter", "periodo-filter"];
+const valor = id => document.getElementById(id).value;
+
+function limparFiltros() {
+  for (const id of FILTROS) document.getElementById(id).value = "";
+  applyFilter();
+}
+
+function applyFilter() {
+  const sdr = valor("sdr-filter"), nivel = valor("nivel-filter");
+  const persona = valor("persona-filter"), dias = Number(valor("periodo-filter"));
+  // created_at vem em UTC; o corte por dias é sobre o instante, não sobre a data,
+  // então não precisa converter para BRT aqui.
+  const limite = dias ? Date.now() - dias * 864e5 : null;
+
+  const rows = allResults.filter(r =>
+    (!sdr || chaveSdr(r.sdr_name) === sdr) &&
+    (!nivel || r.level === nivel) &&
+    (!persona || r.persona_name === persona) &&
+    (!limite || new Date(String(r.created_at).replace(" ", "T") + "Z").getTime() >= limite)
+  );
+
+  const ativos = FILTROS.filter(id => valor(id)).length;
+  const btn = document.querySelector('button[onclick="limparFiltros()"]');
+  btn.textContent = ativos ? `✕ Ver todas (${ativos} filtro${ativos > 1 ? "s" : ""})` : "✕ Ver todas";
+  btn.style.borderColor = ativos ? "#f5c518" : "";
+  btn.style.color = ativos ? "#f5c518" : "";
+
+  render(rows);
+}
+
+function render(rows) {
+  document.getElementById("loading").style.display = "none";
+
+  // Resumo
+  const summary = document.getElementById("summary");
+  if (!rows.length) {
+    summary.innerHTML = "";
+    document.getElementById("empty").style.display = "block";
+    document.getElementById("table-wrap").style.display = "none";
+    return;
+  }
+  const mCrit = media(rows, "media_criterios");
+  const mScript = media(rows, "script_pct");
+  const bySdr = new Set(rows.map(r => chaveSdr(r.sdr_name))).size;
+  const card = (lbl, val, cls) =>
+    `<div class="sum-card"><div class="lbl">${lbl}</div><div class="val ${cls}">${val}</div></div>`;
+  summary.innerHTML =
+    card("Simulações", rows.length, "") +
+    card("Aderência média", mCrit === null ? "—" : mCrit.toFixed(1) + "/5", mCrit === null ? "" : classeCriterios(mCrit)) +
+    card("Script médio", mScript === null ? "—" : Math.round(mScript) + "%", mScript === null ? "" : classeScript(mScript)) +
+    card("SDRs ativos", bySdr, "");
+
+  // Onde o time trava: media de cada etapa no conjunto filtrado.
+  const ROTULOS = ETAPA_ROTULO;
+  const porEtapa = ETAPAS.map(e => ({ e, m: mediaEtapa(rows, e) })).filter(x => x.m !== null);
+  // Nota de modelos diferentes nao se compara. Sem este aviso o painel mostra um
+  // degrau que parece evolucao do time e e so troca de avaliador.
+  const modelos = [...new Set(rows.map(r => r.modelo_avaliador || "desconhecido"))];
+  const avisoEl = document.getElementById("aviso-modelo");
+  if (modelos.length > 1) {
+    avisoEl.innerHTML = "⚠️ Estas simulações foram pontuadas por avaliadores diferentes (" +
+      modelos.map(esc).join(", ") + "). As notas <b>não são comparáveis entre si</b> — " +
+      "medindo a mesma ligação, a troca de modelo mexeu mais de 1 ponto na aderência e 20 no script. " +
+      "Filtre por período ou compare só dentro do mesmo avaliador.";
+    avisoEl.style.display = "block";
+  } else {
+    avisoEl.style.display = "none";
+  }
+
+  const etapasEl = document.getElementById("por-etapa");
+  if (porEtapa.length) {
+    // Empate e comum com poucas simulacoes — apontar so a primeira esconderia
+    // as outras etapas igualmente fracas, que e justamente o que se age em cima.
+    const minimo = Math.min(...porEtapa.map(x => x.m));
+    const piores = porEtapa.filter(x => x.m === minimo).map(x => x.e);
+    const rotuloPior = piores.map(e => ROTULOS[e]).join(", ");
+    etapasEl.innerHTML =
+      '<div class="etapas-titulo">Média por etapa' +
+      `<span class="etapas-pior">ponto${piores.length > 1 ? "s" : ""} mais fraco${piores.length > 1 ? "s" : ""}: ${rotuloPior}</span></div>` +
+      '<div class="etapas-grid">' +
+      porEtapa.map(({ e, m }) =>
+        `<div class="etapa-card${piores.includes(e) ? " etapa-pior" : ""}">` +
+          `<div class="lbl">${ROTULOS[e]}</div>` +
+          `<div class="val ${classeCriterios(m)}">${m.toFixed(1)}<span class="denom">/5</span></div>` +
+        '</div>').join("") +
+      '</div>';
+    etapasEl.style.display = "block";
+  } else {
+    etapasEl.style.display = "none";
+  }
+
+  document.getElementById("empty").style.display = "none";
+  document.getElementById("table-wrap").style.display = "block";
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${fmtDate(r.created_at)}</td>
+      <td>${esc(r.sdr_name) || "—"}</td>
+      <td>${esc(eventoDe(r))} · ${esc(r.persona_name) || "—"}</td>
+      <td class="lvl-${esc(r.level) || ''}">${esc(r.level) || "—"}</td>
+      ${ETAPAS.map(e => celulaEtapa(r, e)).join("")}
+      <td class="score ${typeof r.media_criterios === "number" ? classeCriterios(r.media_criterios) : ""}">${typeof r.media_criterios === "number" ? r.media_criterios.toFixed(1) + "/5" : "—"}</td>
+      <td class="score ${typeof r.script_pct === "number" ? classeScript(r.script_pct) : ""}">${typeof r.script_pct === "number" ? r.script_pct + "%" : "—"}</td>
+      <td class="veredicto">${esc(r.veredicto)}</td>
+    </tr>
+  `).join("");
+}
+
+load();
+</script>
+</body>
+</html>

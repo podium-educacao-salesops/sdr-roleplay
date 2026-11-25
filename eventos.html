@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- A página muda com frequência e o time acessa pelo mesmo link: sem isso o
+     navegador serve a versão antiga e a mudança parece não ter subido. -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Simulador de Eventos</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0d0d0d; color: #e8e8e8;
+    min-height: 100vh; padding: 2rem 1rem;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  #app { width: 100%; max-width: 660px; }
+
+  /* ── Tela de seleção ── */
+  #difficulty-screen { display: flex; flex-direction: column; gap: 1.25rem; }
+  .screen-title { font-size: 22px; font-weight: 500; color: #fff; margin-bottom: 2px; }
+  .screen-sub { font-size: 14px; color: #666; }
+
+  .diff-cards { display: flex; flex-direction: column; gap: 10px; }
+  .diff-card {
+    background: #1a1a1a; border: 1.5px solid #2a2a2a;
+    border-radius: 14px; padding: 1rem 1.25rem;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .diff-card:hover { background: #1f1f1f; border-color: #3a3a3a; }
+  .diff-card.sel-facil    { border-color: #5cb85c; background: #0a2a0a; }
+  .diff-card.sel-medio    { border-color: #f5c518; background: #2a1f00; }
+  .diff-card.sel-dificil  { border-color: #f87171; background: #2a0a0a; }
+  .diff-card.sel-aleatorio{ border-color: #a78bfa; background: #1a103a; }
+  .diff-icon { font-size: 26px; width: 40px; text-align: center; flex-shrink: 0; }
+  .diff-info { flex: 1; }
+  .diff-name { font-size: 15px; font-weight: 500; color: #fff; margin-bottom: 3px; }
+  .diff-desc { font-size: 13px; color: #888; line-height: 1.5; }
+  .diff-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; flex-shrink: 0; }
+
+  #start-btn {
+    width: 100%; padding: 14px; font-size: 15px; font-weight: 500;
+    border-radius: 10px; border: none; cursor: pointer;
+    background: #333; color: #666; font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+  }
+  #start-btn.ready { background: #5cb85c; color: #fff; }
+  #start-btn.ready:hover { background: #4cae4c; }
+
+  /* ── Sessão ── */
+  #session-screen { display: none; flex-direction: column; }
+  h2 { font-size: 20px; font-weight: 500; color: #fff; }
+  .subtitle { font-size: 13px; color: #666; margin-top: 4px; margin-bottom: 1.25rem; }
+
+  #persona-card {
+    background: #1a1a1a; border: 0.5px solid #2a2a2a;
+    border-radius: 12px; padding: 1rem 1.25rem;
+    display: flex; align-items: center; gap: 14px; margin-bottom: 1.25rem;
+  }
+  #persona-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: #1a3a5c; color: #6ab3f8;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 500; font-size: 16px; flex-shrink: 0;
+  }
+  #persona-info strong { font-size: 15px; font-weight: 500; color: #fff; display: block; }
+  #persona-info span { font-size: 13px; color: #777; }
+  #difficulty-badge { margin-left: auto; font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: 500; flex-shrink: 0; }
+
+  #chat-window {
+    background: #111; border: 0.5px solid #222; border-radius: 12px;
+    height: 300px; overflow-y: auto;
+    padding: 1rem; display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  .msg { display: flex; gap: 8px; align-items: flex-end; }
+  .msg.sdr { flex-direction: row-reverse; }
+  .bubble { max-width: 78%; padding: 9px 13px; font-size: 14px; line-height: 1.6; border-radius: 14px; }
+  .barbeiro .bubble { background: #1e1e1e; color: #ddd; border-bottom-left-radius: 4px; }
+  .sdr .bubble { background: #0f3460; color: #a8d4ff; border-bottom-right-radius: 4px; }
+  .msg-av { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+  .barbeiro .msg-av { background: #3a2800; color: #f5c518; }
+  .sdr .msg-av { background: #0a2a0a; color: #5cb85c; }
+  .typing { display: flex; gap: 4px; align-items: center; padding: 9px 13px; background: #1e1e1e; border-radius: 14px 14px 4px 14px; }
+  .typing span { width: 6px; height: 6px; border-radius: 50%; background: #555; animation: blink 1.1s infinite; }
+  .typing span:nth-child(2) { animation-delay: 0.18s; }
+  .typing span:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes blink { 0%,60%,100%{transform:translateY(0);opacity:.5} 30%{transform:translateY(-5px);opacity:1} }
+
+  #mic-area { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 1.25rem; }
+  #status-label { font-size: 13px; color: #666; min-height: 20px; text-align: center; transition: color 0.2s; }
+  #status-label.listening { color: #f87171; }
+  #status-label.speaking  { color: #6ab3f8; }
+  #status-label.thinking  { color: #f5c518; }
+
+  #mic-btn {
+    width: 88px; height: 88px; border-radius: 50%;
+    background: #1a1a1a; border: 2px solid #333;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s; user-select: none;
+    -webkit-user-select: none; touch-action: none; position: relative;
+  }
+  #mic-btn:hover:not([disabled]) { border-color: #555; background: #222; }
+  #mic-btn.active { background: #3a0a0a; border-color: #f87171; box-shadow: 0 0 0 6px rgba(248,113,113,0.15); }
+  #mic-btn.speaking-state { border-color: #6ab3f8; background: #0a1a3a; }
+  #mic-btn[disabled] { opacity: 0.35; cursor: not-allowed; }
+  #mic-icon { font-size: 32px; line-height: 1; }
+  #pulse-ring { position: absolute; inset: -8px; border-radius: 50%; border: 2px solid rgba(248,113,113,0.4); animation: pulse 1s infinite; display: none; }
+  @keyframes pulse { 0%{transform:scale(1);opacity:.7} 100%{transform:scale(1.3);opacity:0} }
+  #mic-btn.active #pulse-ring { display: block; }
+  #mic-hint { font-size: 12px; color: #444; text-align: center; }
+  #transcript-preview { min-height: 24px; font-size: 13px; color: #888; font-style: italic; text-align: center; padding: 0 1rem; }
+
+  #actions { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .act-btn { flex: 1; padding: 10px; font-size: 13px; border-radius: 8px; cursor: pointer; font-family: inherit; border: 0.5px solid; transition: background 0.15s; background: transparent; }
+  #end-btn  { color: #f87171; border-color: #4a1515; }
+  #end-btn:hover  { background: #2a0a0a; }
+  #end-btn[disabled]  { opacity: 0.3; cursor: not-allowed; }
+  #back-btn { color: #888; border-color: #2a2a2a; }
+  #back-btn:hover { background: #1a1a1a; color: #ccc; }
+
+  /* ── Scorecard ── */
+  #scorecard { display: none; background: #111; border: 0.5px solid #222; border-radius: 12px; padding: 1.5rem; margin-top: 1rem; }
+  #scorecard h3 { font-size: 16px; font-weight: 500; color: #fff; margin-bottom: 1.25rem; }
+  .score-hero { display: flex; align-items: baseline; gap: 6px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .score-hero .big { font-size: 52px; font-weight: 500; line-height: 1; }
+  .score-hero .denom { font-size: 22px; color: #555; }
+  .score-hero .verdict { font-size: 13px; color: #777; margin-left: 6px; align-self: center; }
+  .criteria { display: flex; flex-direction: column; gap: 9px; margin-bottom: 1.5rem; }
+  .crit-row { display: flex; align-items: center; gap: 10px; }
+  .crit-label { font-size: 13px; color: #bbb; flex: 1.2; }
+  .bar-bg { flex: 2; height: 5px; background: #222; border-radius: 3px; overflow: hidden; }
+  .bar-fg { height: 100%; border-radius: 3px; }
+  .crit-val { font-size: 13px; font-weight: 500; min-width: 36px; text-align: right; }
+  .fb { font-size: 14px; line-height: 1.75; color: #ccc; }
+  .fb h4 { font-size: 14px; font-weight: 500; color: #fff; margin: 14px 0 5px; }
+  .fb h4:first-child { margin-top: 0; }
+  .score-actions { display: flex; gap: 8px; margin-top: 1.25rem; }
+  .score-actions button { flex: 1; padding: 11px; font-size: 13px; border-radius: 8px; border: 0.5px solid #333; background: transparent; color: #aaa; cursor: pointer; font-family: inherit; }
+  .score-actions button:hover { background: #1a1a1a; color: #fff; }
+
+  /* feedback blocks */
+  .fb-block { margin-top: 1.25rem; }
+  .fb-block h4 { font-size: 14px; font-weight: 500; color: #fff; margin-bottom: 8px; }
+  .fb-block p { font-size: 14px; line-height: 1.75; color: #ccc; }
+  .fb-block ul { padding-left: 1.2rem; display: flex; flex-direction: column; gap: 4px; }
+  .fb-block ul li { font-size: 14px; color: #f87171; line-height: 1.6; }
+  .fb-danger { background: #1a0a0a; border: 0.5px solid #3a1515; border-radius: 10px; padding: 1rem; }
+  .fb-success { background: #0a1a0a; border: 0.5px solid #1a3a1a; border-radius: 10px; padding: 0.75rem 1rem; }
+  .fb-success h4 { color: #5cb85c; margin: 0; }
+  .erro-item { margin-top: 10px; padding: 10px 12px; background: #220a0a; border-radius: 8px; border-left: 3px solid #f87171; }
+  .erro-item:first-of-type { margin-top: 6px; }
+  .erro-momento { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .erro-desc { font-size: 13px; color: #f87171; margin-bottom: 4px; line-height: 1.5; }
+  .erro-fix { font-size: 13px; color: #5cb85c; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TELA 1: escolha do evento e da dificuldade -->
+  <div id="difficulty-screen">
+    <style>
+      .ev-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; width:100%; }
+      .ev-card { padding:12px; border-radius:10px; border:1.5px solid #2a2a2a; background:#1a1a1a; cursor:pointer; }
+      .ev-card.sel { border-color:#d7ab5c; background:#2a2310; }
+      .ev-name { font-weight:600; font-size:14px; color:#e8e8e8; }
+      .ev-desc { font-size:12px; color:#9a9a9a; margin-top:4px; line-height:1.4; }
+      .step-label { font-size:12px; color:#9a9a9a; text-transform:uppercase; letter-spacing:.06em; width:100%; }
+    </style>
+    <div>
+      <div class="screen-title">Simulador de Eventos — Modo Áudio</div>
+      <div class="screen-sub">Treino de abordagem e discurso para convidar donos de barbearia para os eventos. Sem valores.</div>
+    </div>
+
+    <input id="sdr-name-input" type="text" placeholder="Seu nome" autocomplete="off"
+      style="width:100%;padding:12px 14px;font-size:14px;border-radius:10px;border:1.5px solid #2a2a2a;background:#1a1a1a;color:#e8e8e8;font-family:inherit;"
+      oninput="onNameInput()">
+
+    <div class="step-label">1. Evento</div>
+    <div class="ev-cards">
+      <div class="ev-card" data-ev="summit" onclick="selectEvent(this)">
+        <div class="ev-name">Summit</div>
+        <div class="ev-desc">Aberto a alunos e não alunos. Pergunte se já é aluno.</div>
+      </div>
+      <div class="ev-card" data-ev="ppb" onclick="selectEvent(this)">
+        <div class="ev-name">Podium pelo Brasil</div>
+        <div class="ev-desc">Só não alunos. Lead frio da lista da região.</div>
+      </div>
+      <div class="ev-card" data-ev="cash" onclick="selectEvent(this)">
+        <div class="ev-name">Cash Experience</div>
+        <div class="ev-desc">Só alunos que concluíram a implementação.</div>
+      </div>
+      <div class="ev-card" data-ev="aleatorio" onclick="selectEvent(this)">
+        <div class="ev-name">🎲 Sortear</div>
+        <div class="ev-desc">Um dos três eventos a cada sessão.</div>
+      </div>
+    </div>
+
+    <div class="step-label">2. Nível</div>
+    <div class="diff-cards">
+      <div class="diff-card" data-level="facil" onclick="selectDiff(this)">
+        <div class="diff-icon">😊</div>
+        <div class="diff-info">
+          <div class="diff-name">Fácil</div>
+          <div class="diff-desc">Dono receptivo, decide rápido ou só precisa falar com a esposa.</div>
+        </div>
+        <div class="diff-badge" style="background:#0a2a0a;color:#5cb85c">Fácil</div>
+      </div>
+      <div class="diff-card" data-level="medio" onclick="selectDiff(this)">
+        <div class="diff-icon">🤔</div>
+        <div class="diff-info">
+          <div class="diff-name">Médio</div>
+          <div class="diff-desc">Só abre o jogo com pergunta aberta. Objeções de agenda, sócio, mentoria. Às vezes quem atende não é o dono.</div>
+        </div>
+        <div class="diff-badge" style="background:#2a1f00;color:#f5c518">Médio</div>
+      </div>
+      <div class="diff-card" data-level="dificil" onclick="selectDiff(this)">
+        <div class="diff-icon">😤</div>
+        <div class="diff-info">
+          <div class="diff-name">Difícil</div>
+          <div class="diff-desc">Desconfiado, sem tempo ou exigente. Corta monólogo e não aceita contorno genérico.</div>
+        </div>
+        <div class="diff-badge" style="background:#2a0a0a;color:#f87171">Difícil</div>
+      </div>
+      <div class="diff-card" data-level="aleatorio" onclick="selectDiff(this)">
+        <div class="diff-icon">🎲</div>
+        <div class="diff-info">
+          <div class="diff-name">Aleatório</div>
+          <div class="diff-desc">Nível e perfil sorteados a cada sessão.</div>
+        </div>
+        <div class="diff-badge" style="background:#1a103a;color:#a78bfa">Aleatório</div>
+      </div>
+    </div>
+
+    <button id="start-btn" onclick="startSession()">Escolha o evento e o nível para começar</button>
+  </div>
+
+  <!-- TELA 2: sessão de roleplay -->
+  <div id="session-screen">
+    <h2>Simulador de Eventos — Modo Áudio</h2>
+    <p class="subtitle">Toque para falar · Toque de novo para enviar · O cliente responde em voz</p>
+
+    <div id="persona-card">
+      <div id="persona-avatar">--</div>
+      <div id="persona-info">
+        <strong id="p-name">Carregando...</strong>
+        <span id="p-desc"></span>
+      </div>
+      <div id="difficulty-badge"></div>
+    </div>
+
+    <div id="chat-window"></div>
+
+    <div id="mic-area">
+      <div id="status-label">Aguardando...</div>
+      <div id="mic-btn" disabled>
+        <div id="pulse-ring"></div>
+        <span id="mic-icon">🎙️</span>
+      </div>
+      <div id="mic-hint">Toque para falar</div>
+      <div id="transcript-preview"></div>
+    </div>
+
+    <div id="actions">
+      <button class="act-btn" id="end-btn" disabled>⏹ Encerrar e avaliar</button>
+      <button class="act-btn" id="back-btn" onclick="goBack()">↩ Trocar evento ou nível</button>
+    </div>
+
+    <div id="scorecard"></div>
+  </div>
+
+</div>
+
+<script>
+// Os tres eventos que a equipe vende. A persona e a avaliacao leem daqui o
+// publico, o gancho e a regra de abertura de cada um.
+const EVENTOS = {
+  summit: {
+    label: "Summit",
+    origem: "Summit · base e campanhas",
+    publico: "evento aberto, para alunos e não alunos",
+    gancho: "convite para o Summit; antes de seguir, a executiva pergunta se a pessoa já é aluna e adapta a conversa",
+    promessa: "pensar o negócio olhando a barbearia de fora, longe da cadeira e do telefone; gestão de pessoas, captação de clientes e aumento de faturamento; sair com o primeiro passo decidido para colocar em prática na semana seguinte",
+    regra: "Perguntou se a pessoa já é aluna e adaptou a conversa a isso",
+    mentores: null,
+  },
+  ppb: {
+    label: "Podium pelo Brasil",
+    origem: "Lead frio · lista regional",
+    publico: "só NÃO alunos, abordagem de lead frio a partir de uma lista de barbearias da região",
+    gancho: "a barbearia se destacou no levantamento das barbearias da região, pela nota e pelo número de avaliações no Google",
+    promessa: "pensar o negócio olhando a barbearia de fora, longe da cadeira e do telefone; gestão de pessoas, captação de clientes e aumento de faturamento; sair com o primeiro passo decidido para colocar em prática na semana seguinte",
+    regra: "NÃO tratou o lead como aluno e NÃO citou o sistema Cash Barber: ele nunca comprou nada da Podium",
+    mentores: "Rafa Barber, Davidson (Barbeiro Evolução) e Will Vences",
+  },
+  cash: {
+    label: "Cash Experience",
+    origem: "Aluno · implementação concluída",
+    publico: "só alunos do ecossistema Cash Barber que concluíram a implementação",
+    gancho: "o aluno concluiu a implementação e por isso desbloqueou o acesso ao evento; a executiva parabeniza por esse marco",
+    promessa: "imersão presencial de 2 dias em Curitiba sobre assinatura, gestão e crescimento, aprendendo com empresários que já chegaram onde ele quer chegar",
+    regra: "Parabenizou pela implementação concluída e usou isso como motivo do contato (\"você desbloqueou o acesso\")",
+    mentores: "Will Vences (gestão e liderança), Daniel Messias (marketing), Lincoln Wagner (mentoria), um consultor financeiro e mentores da Podium que saíram de menos de 100 para mais de 500 assinantes",
+  },
+};
+
+// Personas tiradas de 27 ligacoes reais do Podium pelo Brasil (out-nov/2026).
+// O campo `ev` diz o que muda em cada evento; o resto vale para os tres.
+// Valores ficam fora do treino: a persona pergunta o preco, mas nao sabe o numero.
+const PERSONAS = {
+  facil: [
+    {
+      name:"Jairo Prado", initials:"JP", city:"Curitiba (Boqueirão)", shop:"JP Barber",
+      papel:"dono", disc:"D", google:"nota 5,0 com 100 avaliações",
+      contexto:"Dono há 4 anos, trabalha sozinho com agenda cheia. Ainda corta o dia inteiro. Conhece o Rafa Barber e o Davidson pelas redes.",
+      dor:"Quer crescer mas não sabe qual o próximo passo; sente que bateu no teto trabalhando sozinho.",
+      objecoes:["Que dia é mesmo?","E é de que horas até que horas?"],
+      comportamento:"Direto e decidido. Está com pouco tempo e diz isso logo no começo. Se a executiva for objetiva e perguntar o que ele quer para a barbearia, ele responde e se anima. Diz sim rápido quando faz sentido. Se a executiva continuar falando depois do sim, ele começa a ficar inquieto e diz que precisa voltar para o cliente.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium. Conhece o Rafa e o Davidson só das redes.",
+        summit:"Você não é aluno. Já ouviu falar do Summit pelo Instagram.",
+        cash:"Você é aluno: concluiu a implementação do Cash Barber há duas semanas e está empolgado com a assinatura, que já tem 15 assinantes.",
+      },
+    },
+    {
+      name:"Márcio Pedroso", initials:"MP", city:"Ponta Grossa", shop:"Barbearia Pedroso",
+      papel:"dono", disc:"S", google:"nota 4,9 com 320 avaliações",
+      contexto:"Barbearia de família, aberta pelo avô; ele está na área há 20 anos, com 3 barbeiros. Toca a gestão com a esposa Camila, que é personal trainer e ajuda no administrativo.",
+      dor:"A barbearia vai bem, mas ele sente que parou no tempo e quer modernizar sem perder a essência.",
+      objecoes:["Vou ter que ver com a Camila, ela tem a agenda dos alunos dela","Que dia da semana cai?"],
+      comportamento:"Educado, calmo, honrado com o convite. Conta com orgulho a história da barbearia se perguntarem. Gosta da ideia, mas não decide sem a esposa. Se a executiva incluir a Camila na conversa pelo nome e combinar um retorno, ele aceita feliz.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium e não conhece bem a empresa.",
+        summit:"Você não é aluno, mas um amigo foi ao último Summit e gostou.",
+        cash:"Você é aluno: concluiu a implementação faz um mês e a Camila é quem mais mexe no sistema.",
+      },
+    },
+  ],
+  medio: [
+    {
+      name:"Gabriel Rocha", initials:"GR", city:"São José dos Pinhais", shop:"Rocha Barbearia",
+      papel:"dono", disc:"I", google:"nota 4,8 com 240 avaliações",
+      contexto:"3 barbeiros, dono há 5 anos, ainda corta. Divide a gestão com a esposa Andressa. Comprou uma cadeira nova e quer abrir a segunda unidade no ano que vem.",
+      dor:"Quer abrir a segunda unidade mas tem medo de a primeira cair sem ele na cadeira.",
+      objecoes:["Tenho que conversar com a Andressa antes","Segunda e terça é dia que eu atendo bastante","Quanto custa isso?"],
+      comportamento:"Simpático e falante. Responde perguntas fechadas com uma palavra, mas se a executiva fizer uma pergunta aberta sobre os planos dele, ele se abre e fala da segunda unidade. Pergunta o valor cedo, antes de entender o evento. Se a executiva despejar informação por muito tempo sem perguntar nada, ele se distrai e diz que tem cliente chegando.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium.",
+        summit:"Você não é aluno.",
+        cash:"Você é aluno: concluiu a implementação e quer usar a assinatura para segurar a primeira unidade enquanto abre a segunda.",
+      },
+    },
+    {
+      name:"Matheus Becker", initials:"MB", city:"Campina Grande do Sul", shop:"Becker Barbearia",
+      papel:"dono", disc:"C", google:"nota 5,0 com 110 avaliações",
+      contexto:"Estava com 2 barbeiros, teve problemas e dispensou os dois; está sozinho agora. Acabou de contratar uma mentoria individual de gestão e marketing com outro mentor do mercado e está seguindo um plano.",
+      dor:"Perdeu a equipe e está tentando reconstruir com método; tem medo de misturar informação.",
+      objecoes:["Já estou fazendo uma mentoria, se eu colocar mais informação agora pode atrapalhar","Não estava esperando investir em nada agora"],
+      comportamento:"Reservado e analítico. Respeita quem escuta. Se a executiva desmerecer o mentor dele ou disser que o outro mentor 'aprendeu com a Podium', ele fica desconfiado e encerra. Se ela valorizar o que ele está fazendo e mostrar o que o evento soma, ele aceita receber material e marcar um retorno.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium.",
+        summit:"Você não é aluno.",
+        cash:"Você é aluno: concluiu a implementação, mas contratou também uma mentoria de marketing por fora.",
+      },
+    },
+    {
+      name:"Solange", initials:"SO", city:"Fazenda Rio Grande", shop:"Barbearia Baianinha",
+      papel:"esposa do dono, fica na recepção", disc:"I", google:"nota 4,8 com 105 avaliações",
+      contexto:"Você é a Solange, esposa do César, dono da barbearia há 13 anos. O César é o único barbeiro e está atendendo agora. Você voltou a trabalhar com ele há um mês, na recepção. Já tiveram barbeiros que aprenderam com o César e saíram para abrir concorrência.",
+      dor:"Vocês desistiram de contratar porque todo barbeiro treinado vai embora; você queria ver o César saindo da cadeira.",
+      objecoes:["Ele está atendendo agora","Ele já fez workshop, está meio calejado","Me manda por escrito para eu não esquecer o detalhe"],
+      comportamento:"Simpática e desconfiada ao mesmo tempo. No começo diz que o assunto é com o César. Se a executiva conversar com você como alguém que decide junto e perguntar da barbearia, você se abre sobre os barbeiros que saíram. Você não fecha nada sozinha: no máximo promete passar para o César e pede um resumo por escrito.",
+      ev:{
+        ppb:"Vocês nunca compraram nada da Podium.",
+        summit:"Vocês não são alunos.",
+        cash:"Vocês são alunos: o César concluiu a implementação e você é quem está aprendendo a mexer no sistema.",
+      },
+    },
+    {
+      name:"Marlon", initials:"ML", city:"Curitiba (Portão)", shop:"Barbearia Estação",
+      papel:"barbeiro funcionário que atendeu o telefone", disc:"S", google:"nota 4,9 com 180 avaliações",
+      contexto:"Você é o Marlon, barbeiro da Barbearia Estação. O dono é o Anderson, que voltou de licença e chega hoje ao meio-dia. Você não sabe nada de evento e não decide nada.",
+      dor:"Nenhuma: você só atende o telefone da barbearia.",
+      objecoes:["O Anderson não está agora","Não sei te informar isso"],
+      comportamento:"Educado e prestativo, mas não passa o celular pessoal do dono. Se a executiva for clara e rápida, você diz o horário em que o Anderson chega e confirma que o WhatsApp da barbearia é com ele. Se ela começar a explicar o evento para você, você fica perdido e repete que é com o Anderson.",
+      ev:{
+        ppb:"A barbearia nunca comprou nada da Podium.",
+        summit:"Você não sabe se o Anderson é aluno.",
+        cash:"O Anderson é aluno e concluiu a implementação, mas você não sabe disso.",
+      },
+    },
+  ],
+  dificil: [
+    {
+      name:"Éderson Lima", initials:"EL", city:"São José dos Pinhais", shop:"Barbearia do Éder",
+      papel:"dono", disc:"C", google:"nota 5,0 com 210 avaliações",
+      contexto:"Uma unidade pequena, 2 barbeiros, 100% no operacional. Sozinho na gestão. Atende entre um cliente e outro.",
+      dor:"Clientes de anos foram para uma barbearia que cobra R$70 'à vontade'; o movimento caiu e ele precisa investir em divulgação sem tempo nem dinheiro. Não acha barbeiro bom.",
+      objecoes:["Muita coisa travando, não tem uma só","Vou dar uma pensada e te falo","Essa semana eu fico com os meus filhos, tenho que ver","Quanto é?"],
+      comportamento:"Desconfiado e cansado. Só conta a dor se a executiva perguntar de forma aberta e ouvir; se ela emendar a apresentação logo depois, ele volta a responder curto. Se ela falar mais de três frases seguidas sem perguntar nada, ele diz que tem cliente chegando. Só aceita marcar um retorno se ela tiver ligado o evento ao que ele contou.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium e já recebeu muita proposta 'de investir'.",
+        summit:"Você não é aluno e acha que evento grande não muda nada.",
+        cash:"Você é aluno, mas mal usou o sistema depois da implementação: 'nem consegui usar direito ainda'.",
+      },
+    },
+    {
+      name:"Felipe Cavalcanti", initials:"FC", city:"Curitiba (Batel)", shop:"O Cavaleiro Barbearia",
+      papel:"dono", disc:"C", google:"nota 5,0 com 520 avaliações",
+      contexto:"10 anos de barbearia, 4 barbeiros, ticket acima da concorrência, ambiente de estúdio. Usa sistema de agenda com campanhas de recorrência e tem contabilidade. Ainda corta porque gosta ('é terapia') e porque rende.",
+      dor:"Não tem dor declarada: está bem. O que ele busca é não ficar para trás e trocar com quem joga no mesmo nível.",
+      objecoes:["Quem são os palestrantes?","Qual foi o critério para selecionar a minha barbearia?","Tem algum material da campanha para eu ver?","Preciso conferir minha agenda, te retorno segunda"],
+      comportamento:"Educado, articulado e exigente. Faz perguntas específicas e não se impressiona com frase genérica de propósito. Se a executiva insistir que ele precisa sair da cadeira, ele discorda. Ele se interessa quando ela entende o momento dele (crescer no nível premium) e conecta o evento a isso.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium.",
+        summit:"Você não é aluno, mas conhece a John Six de nome.",
+        cash:"Você é aluno: implementou a assinatura no nível premium e quer saber o que o evento traz além do que já aprendeu na implementação.",
+      },
+    },
+    {
+      name:"Rodrigo Nunes", initials:"RN", city:"Colombo", shop:"Barbearia do Rodrigo",
+      papel:"dono", disc:"D", google:"nota 5,0 com 102 avaliações",
+      contexto:"Barbearia pequena, trabalha sozinho. Leu a mensagem no WhatsApp, viu que 'tem que investir' e não respondeu.",
+      dor:"Acha a barbearia pequena demais para esse tipo de coisa; no fundo queria crescer mas não acredita que dá.",
+      objecoes:["Vou ser sincero, minha barbearia é bem pequena, sem expressão","Tem que investir, né? Não vou poder agora","Vamos economizar o tempo"],
+      comportamento:"Direto e na defensiva. Tenta encerrar nos primeiros 30 segundos. Só fica na linha se a executiva acolher sem discutir e fizer uma pergunta que o faça falar dele mesmo. Se ela tentar convencer com discurso, ele agradece e desliga.",
+      ev:{
+        ppb:"Você nunca comprou nada da Podium.",
+        summit:"Você não é aluno.",
+        cash:"Você é aluno: concluiu a implementação, mas acha que evento é para barbearia grande.",
+      },
+    },
+  ],
+};
+
+const DIFF_META = {
+  facil:    { label:"fácil",     bg:"#0a2a0a", color:"#5cb85c" },
+  medio:    { label:"médio",     bg:"#2a1f00", color:"#f5c518" },
+  dificil:  { label:"difícil",   bg:"#2a0a0a", color:"#f87171" },
+  aleatorio:{ label:"aleatório", bg:"#1a103a", color:"#a78bfa" },
+};
+
+// O cliente reage ao script oficial da equipe de eventos: abre quando recebe
+// pergunta aberta e e escutado, responde bem a pergunta de visao, e esfria com
+// monologo e com evento vendido pela logistica. E o oposto do roteiro de
+// produto, onde a pergunta de visao e proibida.
+const REACAO = {
+  facil:
+    "COMO VOCÊ REAGE: você está receptivo. Se te perguntarem o que você quer para a barbearia, você responde com vontade. " +
+    "Se perguntarem como seria aprender com quem já resolveu o seu problema, você se anima de verdade. " +
+    "Aceita receber o link ou marcar um retorno sem resistência.",
+  medio:
+    "COMO VOCÊ REAGE: pergunta fechada recebe resposta curta. Você só conta o que quer para a barbearia, e o que te trava, " +
+    "se a executiva fizer uma pergunta aberta E depois perguntar mais sobre o que você disse. " +
+    "Se ela fizer uma pergunta de visão ligada ao que você contou (\"como seria aprender com quem já resolveu isso?\"), você se interessa de verdade. " +
+    "Se ela falar mais de três frases seguidas sem te perguntar nada, você se distrai, responde \"uhum\" e diz que tem cliente. " +
+    "Se ela vender o evento pelo almoço, horário e endereço, você fica morno. " +
+    "Depois que ela apresentar o evento, levante as suas objeções naturais, uma de cada vez. " +
+    "Você NÃO oferece um sim por conta própria: se ela não te fizer uma pergunta de fechamento, encerre com um \"me manda no WhatsApp que eu vejo\".",
+  dificil:
+    "COMO VOCÊ REAGE: você é desconfiado e não entrega nada de graça. Só conta a sua dor se a executiva tiver criado alguma conexão antes " +
+    "e perguntado de forma aberta. Se ela emendar a apresentação logo depois de você falar, você volta a responder curto. " +
+    "Se ela falar mais de três frases seguidas sem te perguntar nada, você corta: \"moça, tenho cliente\". " +
+    "Levante as suas objeções uma de cada vez e, se o contorno for genérico, volte à mesma com outras palavras. " +
+    "Você só aceita marcar um retorno com dia e hora, ou receber o link com intenção de participar, se as três coisas aconteceram: " +
+    "ela entendeu o seu momento com pergunta aberta, ligou o evento ao que você contou, e te fez uma pergunta de fechamento em voz alta. " +
+    "Faltando qualquer uma, você diz que vai pensar e pede para receber por mensagem. Sem grosseria — você só não fecha.",
+};
+
+const DIFF_RULES = {
+  facil:   "Seja receptivo e demonstre interesse genuíno. Use no máximo uma objeção leve.",
+  medio:   "Resista um pouco. Levante ao menos uma objeção depois da apresentação do evento. Aceite se a executiva acolher e voltar ao que você contou.",
+  dificil: "Seja bastante cético. Levante as suas objeções e não aceite contorno genérico.",
+};
+
+const API_URL = "https://withered-wildflower-db78.daiane-silvasvc.workers.dev";
+
+let selectedLevel = null, selectedEvent = null, persona = null, sdrName = "";
+let history = [], isProcessing = false, sessionEnded = false, turnCount = 0;
+let recognition = null, isListening = false;
+let voicePT = null;
+
+const chatWin   = document.getElementById("chat-window");
+const micBtn    = document.getElementById("mic-btn");
+const micIcon   = document.getElementById("mic-icon");
+const statusLbl = document.getElementById("status-label");
+const txPrev    = document.getElementById("transcript-preview");
+const endBtn    = document.getElementById("end-btn");
+
+// Em iPhone e iPad NENHUM navegador suporta reconhecimento de fala — Safari e
+// Chrome lá usam o mesmo motor. Avisar so quando o SDR aperta o microfone faz
+// ele descobrir depois de ja ter escolhido persona e comecado a ligacao.
+function checarAparelho() {
+  if (window.SpeechRecognition || window.webkitSpeechRecognition) return;
+  const aviso = document.createElement("div");
+  aviso.style.cssText = "background:#2a1f00;border:1px solid #5a4a1a;color:#f5c518;" +
+    "padding:14px 16px;border-radius:10px;margin:0 0 1rem;font-size:14px;line-height:1.6";
+  aviso.innerHTML = "<b>Este aparelho não grava a sua voz.</b><br>" +
+    "O reconhecimento de fala não funciona em iPhone nem iPad, em nenhum navegador. " +
+    "Faça a simulação pelo computador, ou por um celular Android usando o Chrome.";
+  const alvo = document.querySelector("#setup") || document.body.firstElementChild;
+  alvo.parentNode.insertBefore(aviso, alvo);
+}
+
+// Mantem a tela acesa durante a ligacao: se o celular apaga, a pagina e suspensa
+// e a avaliacao morre no meio.
+let wakeLock = null;
+async function segurarTela() {
+  try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request("screen"); }
+  catch (e) { /* sem wake lock, a fila de pendentes cobre */ }
+}
+function soltarTela() {
+  try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch (e) {}
+}
+
+// ── Nome do SDR ──
+// O nome e digitado a mao e cada um escreve de um jeito: "Bryan" e "bryan"
+// viravam dois SDRs no painel, com media separada. Normaliza na origem.
+function normalizarNome(n) {
+  return String(n || "").trim().replace(/\s+/g, " ")
+    .toLocaleLowerCase("pt-BR")
+    .replace(/(^|[\s'-])(\p{L})/gu, (_, sep, letra) => sep + letra.toLocaleUpperCase("pt-BR"));
+}
+
+function onNameInput() {
+  sdrName = normalizarNome(document.getElementById("sdr-name-input").value);
+  updateStartBtn();
+}
+
+// ── Seleção de dificuldade ──
+function selectDiff(card) {
+  document.querySelectorAll(".diff-card").forEach(c => c.className = "diff-card");
+  const lvl = card.dataset.level;
+  card.classList.add("sel-" + lvl);
+  selectedLevel = lvl;
+  updateStartBtn();
+}
+
+function selectEvent(card) {
+  document.querySelectorAll(".ev-card").forEach(c => c.classList.remove("sel"));
+  card.classList.add("sel");
+  selectedEvent = card.dataset.ev;
+  updateStartBtn();
+}
+
+function updateStartBtn() {
+  const btn = document.getElementById("start-btn");
+  if (selectedLevel && selectedEvent && sdrName) {
+    btn.className = "ready";
+    btn.textContent = "Iniciar sessão →";
+  } else {
+    btn.className = "";
+    btn.textContent = !sdrName ? "Digite seu nome para começar" : !selectedEvent ? "Escolha o evento" : "Escolha um nível para começar";
+  }
+}
+
+function startSession() {
+  if (!selectedLevel || !selectedEvent || !sdrName) return;
+  document.getElementById("difficulty-screen").style.display = "none";
+  document.getElementById("session-screen").style.display = "flex";
+  init();
+}
+
+function goBack() {
+  speechSynthesis.cancel();
+  if (recognition) try { recognition.abort(); } catch(e) {}
+  document.getElementById("session-screen").style.display = "none";
+  document.getElementById("difficulty-screen").style.display = "flex";
+  document.getElementById("scorecard").style.display = "none";
+  document.getElementById("chat-window").innerHTML = "";
+}
+
+// ── Vozes ──
+function loadVoices() {
+  return new Promise(resolve => {
+    // O lead simulado e um dono de barbearia, entao a voz precisa ser masculina.
+    // Cada SDR roda no proprio navegador, e a lista de vozes muda por maquina e
+    // por sistema — por isso a escolha vai por nomes conhecidos, nao por uma voz fixa.
+    // Em ordem de preferencia, nao alfabetica: vozes de homem adulto natural primeiro.
+    // "eddy" e "grandpa" existem no macOS mas soam caricatas — ficam no fim.
+    const MASC = ["felipe","reed","daniel","antonio","fabio","julio","nicolau","valerio",
+                  "donato","humberto","ricardo","rocko","eddy","grandpa"];
+    const FEM  = ["luciana","joana","flo","sandy","shelley","grandma","francisca","brenda",
+                  "leila","yara","thalita","elza","giovanna","leticia","maria","manuela"];
+    const nome = x => x.name.toLowerCase();
+    const ptBR = x => x.lang.startsWith("pt") && x.lang.includes("BR");
+    // Atencao: "female".includes("male") e true — o filtro antigo casava voz feminina.
+    // Aqui "male" precisa aparecer como palavra, e "female" desqualifica.
+    const diz_masculino = x => /\bmale\b/.test(nome(x)) && !/female/.test(nome(x));
+
+    // Percorre a preferencia, nao a lista do navegador: a ordem das vozes muda por
+    // maquina, e sem isso quem decide a voz e o sistema, nao a gente.
+    const porNome = (v, filtro) => {
+      for (const n of MASC) {
+        const achou = v.find(x => filtro(x) && nome(x).includes(n));
+        if (achou) return achou;
+      }
+      return null;
+    };
+
+    const pick = () => {
+      const v = speechSynthesis.getVoices();
+      voicePT =
+           porNome(v, ptBR)
+        || v.find(x => ptBR(x) && diz_masculino(x))
+        || porNome(v, x => x.lang.startsWith("pt"))
+        || v.find(x => ptBR(x) && !FEM.some(n => nome(x).includes(n)) && !/female/.test(nome(x)))
+        || v.find(x => ptBR(x))
+        || v.find(x => x.lang.startsWith("pt"))
+        || null;
+      resolve();
+    };
+    if (speechSynthesis.getVoices().length) pick();
+    else speechSynthesis.onvoiceschanged = pick;
+  });
+}
+
+function speak(text, onEnd) {
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  if (voicePT) utt.voice = voicePT;
+  utt.lang = voicePT ? voicePT.lang : "pt-BR";
+  utt.rate = 0.95; utt.pitch = 0.9;
+  utt.onend = onEnd || null; utt.onerror = onEnd || null;
+  speechSynthesis.speak(utt);
+}
+
+// ── UI ──
+function setStatus(text, cls) { statusLbl.textContent = text; statusLbl.className = cls || ""; }
+
+function addMsg(role, text) {
+  const isSDR = role === "sdr";
+  const div = document.createElement("div"); div.className = "msg " + (isSDR ? "sdr" : "barbeiro");
+  const av = document.createElement("div"); av.className = "msg-av"; av.textContent = isSDR ? "Você" : persona.initials;
+  const bub = document.createElement("div"); bub.className = "bubble"; bub.textContent = text;
+  if (isSDR) { div.appendChild(bub); div.appendChild(av); } else { div.appendChild(av); div.appendChild(bub); }
+  chatWin.appendChild(div); chatWin.scrollTop = chatWin.scrollHeight;
+}
+
+function showTyping() {
+  const div = document.createElement("div"); div.className = "msg barbeiro"; div.id = "typing";
+  const av = document.createElement("div"); av.className = "msg-av"; av.textContent = persona.initials;
+  const bub = document.createElement("div"); bub.className = "bubble";
+  bub.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  div.appendChild(av); div.appendChild(bub); chatWin.appendChild(div); chatWin.scrollTop = chatWin.scrollHeight;
+}
+function hideTyping() { const t = document.getElementById("typing"); if (t) t.remove(); }
+
+// ── Persona ──
+function renderPersona(p) {
+  const ev = EVENTOS[p.evento];
+  document.getElementById("persona-avatar").textContent = p.initials;
+  document.getElementById("p-name").textContent = p.name + (p.papel && p.papel !== "dono" ? " (" + p.papel + ")" : "");
+  // A ficha mostra o que a executiva teria na mao antes de ligar.
+  const extra = p.evento === "ppb" ? "Google: " + p.google
+              : p.evento === "cash" ? "implementação concluída" : "";
+  document.getElementById("p-desc").textContent =
+    p.shop + " · " + p.city + " · " + ev.label + " · " + ev.origem + (extra ? " · " + extra : "");
+
+  const b = document.getElementById("difficulty-badge");
+  const meta = DIFF_META[p.difficulty];
+  b.textContent = meta.label;
+  b.style.background = meta.bg;
+  b.style.color = meta.color;
+}
+
+function buildSystem(p) {
+  const ev = EVENTOS[p.evento];
+  const objs = p.objecoes && p.objecoes.length
+    ? "Suas objeções naturais (use no momento certo, nunca logo de cara): " + p.objecoes.join(" / ")
+    : "Você não tem grandes objeções nesta sessão.";
+  const nivel = DIFF_RULES[p.difficulty] || DIFF_RULES.medio;
+  const prof  = REACAO[p.difficulty] || REACAO.medio;
+  const quem = p.papel && p.papel !== "dono"
+    ? "Você é " + p.name + ", " + p.papel + " da " + p.shop + " em " + p.city + "."
+    : "Você é " + p.name + ", dono da " + p.shop + " em " + p.city + ".";
+  return (
+    quem + "\n" +
+    "Contexto: " + p.contexto + "\n" +
+    "Situação com a Podium: " + p.ev[p.evento] + "\n" +
+    "Sua barbearia no Google: " + p.google + ".\n" +
+    "Sua dor principal (não entregue de graça): " + p.dor + "\n" +
+    "Perfil DISC: " + p.disc + " — " + p.comportamento + "\n" +
+    objs + "\n\n" +
+    "NÍVEL DESTA SESSÃO (" + p.difficulty + "): " + nivel + "\n" +
+    prof + "\n\n" +
+    "O QUE ESTÁ ACONTECENDO:\n" +
+    "- Uma executiva da Podium Educação está te ligando para te convidar para um evento presencial (" + ev.label + ").\n" +
+    "- Você NÃO sabe os detalhes do evento: nem datas, nem programação, nem quem vai palestrar. Tudo isso você só sabe se ela contar.\n" +
+    (p.evento === "ppb"
+      ? "- É uma ligação fria: você não esperava o contato e não conhece bem a Podium. Se ela falar com você como se você fosse aluno ou cliente do sistema, estranhe: \"aluno? nunca contratei nada de vocês\".\n"
+      : p.evento === "cash"
+      ? "- Você é aluno e reconhece a Podium e o Lincoln. Se ela não citar a sua implementação, você não entende de onde veio o convite.\n"
+      : "- Se ela não perguntar se você já é aluno, não diga por conta própria.\n") +
+    "- Você NÃO sabe quanto custa. Se quiser saber, PERGUNTE. Se ela disser um valor, apenas siga a conversa.\n\n" +
+    "REGRAS ABSOLUTAS:\n" +
+    "- Responda SEMPRE como " + p.name + ", 1ª pessoa, linguagem coloquial brasileira.\n" +
+    "- NUNCA quebre o personagem. NUNCA revele que é IA.\n" +
+    "- Respostas CURTAS: 1 a 3 frases. Como numa ligação real.\n" +
+    "- Não entregue sua dor de graça — deixe a executiva descobrir fazendo perguntas.\n\n" +
+    "FORMATO DA SUA RESPOSTA — a regra mais importante de todas:\n" +
+    "Escreva APENAS as palavras que você fala no telefone, como se fossem transcritas da ligação.\n" +
+    "- Nada de narração: não descreva o que você está pensando, sentindo ou decidindo.\n" +
+    "- Nada de terceira pessoa: nunca escreva sobre \"o usuário\", \"a executiva\" ou \"o vendedor\".\n" +
+    "- Nada de avaliar o desempenho de quem te ligou. Isso não é papel seu.\n" +
+    "- Nada de separador (---), marcador, aspas envolvendo a fala, ou anotação entre colchetes.\n" +
+    "- Nada de escrever a fala da executiva. Você responde só com a SUA fala, e espera a dela.\n" +
+    "- Escreva em português. Nunca em inglês.\n" +
+    "- Nunca fale em nome da Podium nem do evento — você é o cliente.\n" +
+    "Se perceber que começou a explicar seu raciocínio, descarte e responda só com a frase falada."
+  );
+}
+
+
+// Rede de seguranca contra vazamento de raciocinio na fala do barbeiro.
+// O gemini-2.5-flash chegou a emitir "**Thinking Process:** The SDR just presented..."
+// em ingles, citando as instrucoes do personagem e escrevendo a fala do SDR.
+// A correcao de origem e o thinkingBudget 0 no worker; isto aqui e a rede.
+const META_MARCADOR = /(\*\*\s*(?:thinking|análise|analise|racioc[íi]nio|reasoning)[^*]*\*\*|thinking process\s*:)/i;
+const META_LINHA = new RegExp(
+  "^\\s*(?:" +
+    "-{3,}|\\*{3,}|" +                                    // separadores
+    "\\*\\*[^*]+\\*\\*:?|" +                        // titulo em negrito
+    "(?:\\*|_)*(?:Silenciosamente|O usu[áa]rio|O SDR|A executiva|O vendedor|A l[óo]gica d|Observa[çc][ãa]o:|Nota:|" +
+    "My character|My instruction|I need to|I already|The SDR|He (?:didn't|also|gave)|So,? I)[^\\n]*" +
+  ")\\s*$", "i");
+
+// Retorna "" quando so havia raciocinio — o chamador tenta de novo em vez de
+// exibir o vazamento. Nunca silencia o barbeiro por falso positivo: se nao havia
+// marcador de raciocinio, devolve o texto original.
+function limparFala(texto) {
+  const bruto = String(texto || "").trim();
+  if (!bruto) return "";
+  const temMarcador = META_MARCADOR.test(bruto);
+
+  let linhas = bruto.split("\n");
+  if (temMarcador) {
+    // A fala de verdade vem depois do bloco de raciocinio: corta no ultimo separador.
+    for (let i = linhas.length - 1; i >= 0; i--) {
+      if (/^\s*-{3,}\s*$/.test(linhas[i])) { linhas = linhas.slice(i + 1); break; }
+    }
+  }
+  // Duas formas de vazamento: linha que E so meta, e linha que COMECA com o
+  // marcador e emenda o raciocinio inteiro atras (foi o caso real).
+  const limpas = linhas.filter(l => !META_LINHA.test(l) && !META_MARCADOR.test(l.slice(0, 40)));
+  const saida = limpas.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+
+  if (saida && saida !== bruto) console.warn("Persona vazou raciocínio; linhas removidas:", linhas.length - limpas.length);
+  if (saida) return saida;
+  return temMarcador ? "" : bruto;   // sem marcador, o texto era fala de verdade
+}
+
+// ── API ──
+async function callAPI(messages, system, opts) {
+  const o = opts || {};
+  // O worker escolhe o modelo a partir de `task` — persona (rapido) ou avaliacao (qualidade).
+  const payload = { task: o.task || "persona", max_tokens: o.max_tokens || 8000, system, messages };
+  // temperature so vai quando pedida. A persona fica no default (barbeiro variado, bom pra treino);
+  // a avaliacao roda em 0 porque sem isso a nota oscila: medido na mesma transcricao, 3 rodadas,
+  // o script espalhou 15 pontos (50-65%) sem temperature contra 5 pontos (65-70%) com temperature 0,
+  // e a Investigacao pulou de 3 para 5. Nao remover sem medir de novo.
+  if (typeof o.temperature === "number") payload.temperature = o.temperature;
+  const resp = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+  const texto = data.content[0].text;
+  // Quem pontua precisa registrar QUAL modelo pontuou: a nota nao e comparavel
+  // entre modelos. Medido na mesma transcricao, o 3.1-pro-preview deu +1.2 de
+  // aderencia e +20 pontos de script sobre o 2.5-pro.
+  return o.comMeta ? { texto, modelo: data.model || null } : texto;
+}
+
+// ── Reconhecimento de fala ──
+// Recria o objeto a cada uso para evitar estado inválido entre sessões
+function createRecognition(onFinalResult) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert("Reconhecimento de fala não suportado. Use Chrome ou Edge."); return null; }
+  const rec = new SR();
+  rec.lang = "pt-BR";
+  rec.continuous = false;       // o onend reinicia enquanto isListening, então a
+                                // gravação segue aberta até o segundo toque
+  rec.interimResults = true;
+  rec.maxAlternatives = 1;
+
+  let collected = "";
+
+  rec.onresult = (e) => {
+    let interim = "";
+    for (let i = 0; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) collected += t;
+      else interim += t;
+    }
+    txPrev.textContent = (collected + interim).trim() || "";
+  };
+
+  rec.onend = () => {
+    // Disparado quando recognition para (por stop() ou timeout)
+    if (isListening) {
+      // ainda segurando — reinicia para capturar mais
+      try { rec.start(); } catch(e) {}
+    } else {
+      // soltou o botão — entrega resultado
+      onFinalResult(collected.trim());
+    }
+  };
+
+  rec.onerror = (e) => {
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      setStatus("Permissão de microfone negada. Verifique as configurações do navegador.");
+    } else if (e.error !== "no-speech" && e.error !== "aborted") {
+      setStatus("Erro no microfone: " + e.error);
+    }
+  };
+
+  return rec;
+}
+
+// ── Push-to-talk ──
+function startListening() {
+  if (isProcessing || sessionEnded) return;
+  speechSynthesis.cancel();
+  currentTranscript = ""; txPrev.textContent = "";
+  isListening = true;
+  micBtn.classList.add("active"); micIcon.textContent = "🔴";
+  const dica = document.getElementById("mic-hint");
+  if (dica) dica.textContent = "Gravando… toque de novo para enviar";
+  setStatus("Ouvindo... fale agora", "listening");
+
+  // Cria instância nova a cada press
+  recognition = createRecognition((finalText) => {
+    txPrev.textContent = "";
+    if (finalText) sendTurn(finalText);
+    else setStatus("Nada captado. Tente novamente.");
+  });
+  if (!recognition) return;
+  try { recognition.start(); } catch(e) { setStatus("Erro ao iniciar microfone: " + e.message); }
+}
+
+function stopListening() {
+  if (!isListening) return;
+  isListening = false;
+  micBtn.classList.remove("active"); micIcon.textContent = "🎙️";
+  const dica = document.getElementById("mic-hint");
+  if (dica) dica.textContent = "Toque para falar";
+  // onend do recognition vai entregar o resultado
+  try { if (recognition) recognition.stop(); } catch(e) {}
+}
+
+// Toque para começar, toque de novo para enviar. Era segurar o botão, e o
+// `mouseleave` cortava a frase no meio sempre que o dedo ou o cursor escorregava
+// para fora — o SDR perdia o que já tinha falado sem entender por quê.
+// Só `click`: no toque o navegador dispara click depois do touchend, então usar
+// os dois faria a gravação ligar e desligar no mesmo toque.
+micBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  if (isListening) stopListening(); else startListening();
+});
+
+// ── Turno ──
+async function sendTurn(text) {
+  if (isProcessing || sessionEnded) return;
+  isProcessing = true; micBtn.setAttribute("disabled",""); endBtn.setAttribute("disabled","");
+  setStatus("Processando...", "thinking");
+  history.push({ role: "user", content: text });
+  addMsg("sdr", text); showTyping(); turnCount++;
+  try {
+    let reply = limparFala(await callAPI(history, buildSystem(persona)));
+    if (!reply) {
+      // A resposta inteira era raciocinio. Uma nova tentativa em vez de exibir o vazamento.
+      console.warn("Persona respondeu só com raciocínio; tentando de novo");
+      reply = limparFala(await callAPI(history, buildSystem(persona)));
+    }
+    if (!reply) reply = "Desculpa, o sinal caiu aqui. Pode repetir?";
+    history.push({ role: "assistant", content: reply });
+    hideTyping(); addMsg("barbeiro", reply);
+    micBtn.classList.add("speaking-state"); micIcon.textContent = "🔊";
+    setStatus(persona.name + " falando...", "speaking");
+    speak(reply, () => {
+      micBtn.classList.remove("speaking-state"); micIcon.textContent = "🎙️";
+      setStatus("Sua vez — toque para falar");
+      isProcessing = false; micBtn.removeAttribute("disabled");
+      if (turnCount >= 2) endBtn.removeAttribute("disabled");
+    });
+  } catch(e) {
+    hideTyping(); setStatus("Erro: " + e.message);
+    isProcessing = false; micBtn.removeAttribute("disabled");
+  }
+}
+
+// ── Abertura ──
+async function getGreeting() {
+  setStatus("Ligando para a barbearia..."); showTyping();
+  try {
+    const reply = await callAPI(
+      [{ role: "user", content: "O telefone da sua barbearia está tocando. Atenda com uma frase curta e natural." }],
+      buildSystem(persona) + "\n\nAtenda o telefone agora com 1 frase bem curta e natural."
+    );
+    history.push({ role: "assistant", content: limparFala(reply) });
+    hideTyping(); addMsg("barbeiro", reply);
+    micBtn.classList.add("speaking-state"); micIcon.textContent = "🔊";
+    setStatus(persona.name + " falando...", "speaking");
+    speak(reply, () => {
+      micBtn.classList.remove("speaking-state"); micIcon.textContent = "🎙️";
+      setStatus("Sua vez — toque para falar"); micBtn.removeAttribute("disabled");
+    });
+  } catch(e) {
+    hideTyping();
+    const fb = "Alô, " + persona.shop + ", boa tarde!";
+    history.push({ role: "assistant", content: fb }); addMsg("barbeiro", fb);
+    speak(fb, () => { micIcon.textContent = "🎙️"; setStatus("Sua vez — toque para falar"); micBtn.removeAttribute("disabled"); });
+  }
+}
+
+// ── Checklist do roteiro de agendamento ──
+// O "% de script seguido" NAO vem mais do modelo: ele marca item por item e o
+// codigo soma. A aritmetica livre do modelo espalhava 25 pontos na mesma call.
+// "NA" = item nao aplicavel (etapa que nao existiu na ligacao); sai do denominador.
+// Regua do script oficial da equipe de eventos (9 etapas + postura).
+// Valores ficam fora: so se avalia se a executiva segurou o preco.
+const CHECKLIST_SCRIPT = [
+  { grupo: "1. Rapport e conexão", peso: 10, chave: "rapport", itens: [
+    ["rap_identificou", "Disse o próprio nome e de qual equipe fala (Podium Educação, equipe do Lincoln ou do Rafa, conforme o evento)"],
+    ["rap_conexao",     "Fez um comentário ou pergunta pessoal (cidade, barbearia, rotina, correria do dia) e ESCUTOU a resposta antes de entrar no evento"],
+    ["rap_sem_desculpa","NÃO pediu desculpa por ligar nem usou tom de quem está atrapalhando"],
+  ]},
+  { grupo: "2. Gancho certo do evento", peso: 10, chave: "gancho", itens: [
+    ["gan_marco",       "Parabenizou o cliente pelo marco que vale para ESTE evento: implementação concluída (Cash Experience), nota e avaliações no Google (Podium pelo Brasil), ou o momento da barbearia (Summit)"],
+    ["gan_motivo",      "Explicou por que está ligando para ELE (foi selecionado, desbloqueou o acesso, a barbearia se destacou)"],
+    ["gan_regra",       "Respeitou a regra de abertura do evento descrita no contexto (seção 6)"],
+  ]},
+  { grupo: "3. Entender o momento", peso: 10, chave: "momento", itens: [
+    ["mom_aberta",      "Fez ao menos uma pergunta ABERTA sobre o momento ou o objetivo (\"o que você está buscando?\", \"qual o principal objetivo nos próximos meses?\", \"como está sendo esse início?\")"],
+    ["mom_escutou",     "Deixou o cliente responder sem interromper e sem emendar a apresentação do evento logo em seguida"],
+  ]},
+  { grupo: "4. Cavar a necessidade", peso: 10, chave: "cavar", itens: [
+    ["cav_follow",      "Fez pelo menos uma pergunta de aprofundamento sobre o que o cliente disse"],
+    ["cav_impedimento", "Perguntou o que está impedindo o resultado ou o que ele melhoraria primeiro (\"se pudesse melhorar uma única coisa...\")"],
+  ]},
+  { grupo: "5. Pergunta de visão", peso: 15, chave: "visao", itens: [
+    ["vis_pergunta",    "Fez a pergunta de visão: \"como seria para você ter acesso a empresários que já resolveram isso?\" ou variação com o mesmo sentido"],
+    ["vis_ligada",      "A pergunta de visão estava ligada à dor ou ao objetivo que o CLIENTE disse, e não era genérica"],
+  ]},
+  { grupo: "6. Vender o desejo, não o evento", peso: 15, chave: "desejo", itens: [
+    ["des_conectou",    "Ligou um mentor ou um tema do evento à dor ou ao objetivo que o cliente contou (\"aquilo que você falou de...\")"],
+    ["des_transformacao","Vendeu resultado e transformação (crescer, sair da cadeira, montar equipe, faturar mais), não palestra"],
+    ["des_sem_logistica","NÃO gastou o pitch em almoço, banquete, chef, happy hour, cronograma ou endereço. Citar a logística em uma frase quando o cliente pergunta não conta como falha"],
+  ]},
+  { grupo: "7. Apresentação curta", peso: 10, chave: "apresentacao", itens: [
+    ["apr_cliente_cedo","O cliente teve espaço para falar logo no começo: a executiva fez uma pergunta já na primeira ou segunda fala"],
+    ["apr_sem_monologo","Nenhuma fala da executiva passou de cerca de 6 frases seguidas sem uma pergunta"],
+    ["apr_curiosidade", "Apresentou o evento de forma objetiva, deixando curiosidade, sem explicar tudo"],
+  ]},
+  { grupo: "8. Escassez e preço", peso: 5, chave: "escassez", itens: [
+    ["esc_usou",        "Usou escassez: vagas limitadas, edição especial, turma fechando"],
+    ["esc_preco",       "Quando o cliente perguntou o valor, NÃO citou número: disse que manda o investimento por escrito e voltou para a conversa. NA se o cliente não perguntou"],
+  ]},
+  { grupo: "9. Fechamento e compromisso", peso: 10, chave: "fechamento", itens: [
+    ["fec_pergunta",    "Fez uma pergunta de fechamento em voz alta: \"como seria para você participar?\", \"qual turma faz mais sentido?\", \"posso contar com você?\""],
+    ["fec_objecao",     "Acolheu a objeção antes de argumentar e voltou ao que o cliente contou, sem rebater e sem recuar na primeira. NA se não houve objeção"],
+    ["fec_quem_decide", "Quando o cliente citou alguém que decide junto (esposa, sócio), incluiu essa pessoa pelo nome no convite. NA se não citou"],
+    ["fec_retorno",     "Se o cliente não decidiu na ligação, saiu com dia e hora de retorno combinados (\"te mando e você me fala\" é false). NA se o cliente decidiu"],
+  ]},
+  { grupo: "10. Postura", peso: 5, chave: "postura", itens: [
+    ["pos_firmeza",     "Falou com firmeza e convicção, sem hesitar nem soar lida (\"isso é pra você\")"],
+    ["pos_sem_vetadas", "NÃO usou frases vetadas pela gestão (dizer que o valor 'não fica nada pra gente', dizer que outro mentor do mercado 'foi nosso aluno') e NÃO inventou dado, nome ou número"],
+  ]},
+];
+
+// Soma o checklist. Grupo sem nenhum item aplicavel sai da conta inteira, e os
+// pesos restantes se renormalizam — e por isso uma call desqualificada no CNPJ
+// nao e punida pelas etapas que deixaram de existir.
+function somarChecklist(marcado) {
+  const m = marcado || {};
+  const grupos = [];
+  let pesoTotal = 0, pontos = 0;
+  for (const g of CHECKLIST_SCRIPT) {
+    const aplicaveis = [], feitos = [];
+    for (const [chave, rotulo] of g.itens) {
+      const v = m[chave];
+      if (v === "NA" || v === "na" || v == null) continue;
+      aplicaveis.push([chave, rotulo, v === true]);
+      if (v === true) feitos.push(chave);
+    }
+    if (!aplicaveis.length) { grupos.push({ ...g, aplicaveis, fracao: null }); continue; }
+    const fracao = feitos.length / aplicaveis.length;
+    pesoTotal += g.peso;
+    pontos += g.peso * fracao;
+    grupos.push({ ...g, aplicaveis, fracao });
+  }
+  if (!pesoTotal) return null;
+  return { pct: Math.round(pontos / pesoTotal * 100), grupos };
+}
+
+// ── Avaliação ──
+// Régua do Script de Ligação 3C: as 7 etapas que a gestão cobra ao vivo,
+// com os pesos dela. Cada etapa vira um critério de 0 a 5.
+// Os criterios SAO as etapas do script: mesma divisao, mesmos pesos que a
+// gestao cobra ao vivo. Antes eram duas estruturas paralelas que precisavam ser
+// mantidas em sincronia na mao — e divergiram.
+const CRITERIOS = CHECKLIST_SCRIPT.map(g => [g.chave, g.grupo]);
+const CRITERIO_ITENS = Object.fromEntries(
+  CHECKLIST_SCRIPT.map(g => [g.chave, g.itens.map(([k]) => k)])
+);
+
+// Nota 0-5 a partir da fracao de itens cumpridos. Item "NA" sai do denominador;
+// etapa sem nenhum item aplicavel vira "NA" e fica fora da media.
+function notaDoCriterio(marcado, criterio) {
+  const chaves = CRITERIO_ITENS[criterio] || [];
+  let aplicaveis = 0, feitos = 0;
+  for (const k of chaves) {
+    const v = (marcado || {})[k];
+    if (v === "NA" || v === "na" || v == null) continue;
+    aplicaveis++;
+    if (v === true) feitos++;
+  }
+  if (!aplicaveis) return { nota: "NA", feitos: 0, aplicaveis: 0 };
+  return { nota: Math.round(feitos / aplicaveis * 5 * 10) / 10, feitos, aplicaveis };
+}
+
+function lerAvaliacao(result) {
+  const crit = result && result.criterios;
+  if (!crit) return null;
+  for (const [k] of CRITERIOS) if (!crit[k]) return null;  // exige o feedback das 10 etapas
+
+  // O percentual do script e somado do checklist, nunca lido do modelo.
+  const marcado = (result.script && result.script.checklist) || {};
+  const soma = somarChecklist(marcado);
+  if (!soma) return null;
+
+  const notas = {}, detalhe = {}, pontuadas = [];
+  for (const [k] of CRITERIOS) {
+    const d = notaDoCriterio(marcado, k);
+
+    notas[k] = d.nota;
+    detalhe[k] = d;
+    if (d.nota !== "NA") pontuadas.push(d.nota);
+  }
+  if (!pontuadas.length) return null;
+
+  return {
+    notas,
+    detalhe,
+    media: Math.round(pontuadas.reduce((a, b) => a + b, 0) / pontuadas.length * 10) / 10,
+    scriptPct: soma.pct,
+    scriptGrupos: soma.grupos,
+  };
+}
+
+const corNota   = n => n === "NA" ? "#666" : n >= 4 ? "#5cb85c" : n >= 3 ? "#f5c518" : "#f87171";
+const corScript = p => p >= 80 ? "#5cb85c" : p >= 50 ? "#f5c518" : "#f87171";
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+endBtn.addEventListener("click", async () => {
+  if (isProcessing) return;
+  speechSynthesis.cancel();
+  sessionEnded = true; endBtn.setAttribute("disabled",""); micBtn.setAttribute("disabled","");
+  setStatus("Gerando avaliação...", "thinking");
+
+  const transcript = history.map(m => (m.role === "user" ? "Executiva" : "Cliente (" + persona.name + ")") + ": " + m.content).join("\n");
+  const numTurnos = history.filter(m => m.role === "user").length;
+  const ev = EVENTOS[persona.evento];
+  const gabarito =
+    "GABARITO: " + persona.name + " (" + (persona.papel || "dono") + ") | " + persona.shop + " | " + persona.city + "\n" +
+    "Situação com a Podium: " + persona.ev[persona.evento] + "\n" +
+    "Google: " + persona.google + "\n" +
+    "Dor: " + persona.dor + "\n" +
+    "DISC: " + persona.disc + " | Comportamento: " + persona.comportamento.substring(0,160) + "...\n";
+
+  // O texto do checklist no prompt e gerado da mesma constante que faz a soma,
+  // para prompt e pontuacao nunca divergirem.
+  const checklistTexto = CHECKLIST_SCRIPT.map(g =>
+    g.grupo + " (peso " + g.peso + ")\n" +
+    g.itens.map(([chave, rotulo]) => "- " + chave + ": " + rotulo).join("\n")
+  ).join("\n\n");
+
+  const evalPrompt =
+`# AGENTE DE ANÁLISE DE LIGAÇÕES — EQUIPE DE EVENTOS PODIUM
+## SCRIPT OFICIAL — VENDER O EVENTO (ROLEPLAY)
+
+## 1. IDENTIDADE E MISSÃO
+Você é um líder da equipe de eventos avaliando uma ligação de roleplay em que a executiva convida um dono de barbearia para um evento presencial.
+Escreva o FEEDBACK PARA A EXECUTIVA na voz do líder dela: direto, técnico, com uma dica prática em cada etapa.
+Você NÃO é um agente de elogios. Notas altas exigem evidência explícita na transcrição.
+
+## 2. O QUE A GESTÃO MAIS COBRA
+- Conexão antes de vender. Ouvir mais e falar menos.
+- Perguntas melhores: descobrir objetivo, sonho e desafio do cliente.
+- A PERGUNTA DE VISÃO é a etapa que o gestor mais reforça: "como seria para você ter acesso a empresários que já resolveram exatamente esse problema?". Aqui ela é OBRIGATÓRIA e boa.
+- Vender transformação, não palestra, almoço ou cronograma. Não explicar tudo do evento: criar curiosidade.
+- Escassez e postura de vendedora ("isso é pra você").
+- Valores ficam FORA deste treino. Não avalie preço, parcelamento nem número de vagas. Só avalie se, quando o cliente perguntou o valor, ela segurou sem citar número.
+
+## 3. REGRAS
+REGRA 1 — CITAÇÕES: todo trecho citado é LITERAL, com no máximo 30 palavras, identificado com 🟢 EXECUTIVA ou 🟣 CLIENTE e "⏱ turno #N" (conte os turnos de fala a partir de 1; não existe minutagem, nunca invente horário). Sem trecho = sem evidência.
+REGRA 2 — MONÓLOGO: registre quando a executiva falar mais de cerca de 6 frases seguidas sem perguntar nada, quando apresentar o evento antes de entender o cliente, ou quando gastar o pitch em logística. Registre o turno, o impacto e, em UMA frase, o que deveria ter dito.
+REGRA 3 — PONTO DE PERDA: se a ligação terminou sem fechamento nem retorno marcado por falha da executiva, identifique o momento exato.
+REGRA 4 — VOZ DO LÍDER: segunda pessoa ("você fez", "você deixou de fazer"). Estrutura por etapa: o que fez certo (uma frase, só com trecho); o que errou + turno + impacto; "Na próxima:" com a frase exata. Sem suavizador, sem elogio em parágrafo.
+
+## 4. ORDEM DE EXECUÇÃO
+1. Numere os turnos. 2. Liste as perguntas da executiva e marque aberta ou fechada. 3. Liste o que o cliente contou de objetivo e dor, marcando ESPONTÂNEO ou PERGUNTADO. 4. Marque onde cada etapa começa e termina, ou AUSENTE. 5. Localize os trechos. 6. Só então marque o checklist.
+Ajuste de roleplay: avalie só a executiva. Se o cliente simulado entregou a dor sem ser perguntado, isso não é mérito dela. Se ele saiu do personagem, ignore o trecho.
+
+## 5. CHECKLIST
+Marque cada item com true, false ou "NA". NÃO calcule percentual nem nota: tudo é somado fora daqui.
+- true = fez, com trecho que prova
+- false = não fez, ou fez de um jeito que não conta
+- "NA" = a situação não existiu (o cliente não objetou, não perguntou o valor, decidiu na hora). Nunca use NA para etapa que ela simplesmente pulou.
+Em dúvida entre true e false, marque false.
+Se o cliente era quem atende o telefone e não decide (funcionário, parente), o certo é conseguir rápido o horário e o canal do dono sem explicar o evento para quem não decide: nesse caso marque "NA" nas etapas 3 a 9 que deixaram de existir e avalie rapport, gancho e postura.
+
+` + checklistTexto + `
+
+## 6. CONTEXTO DESTE ROLEPLAY
+Evento: ` + ev.label + `
+Público do evento: ` + ev.publico + `
+Gancho esperado: ` + ev.gancho + `
+Regra de abertura (item gan_regra): ` + ev.regra + `
+Promessa do evento: ` + ev.promessa + `
+` + (ev.mentores ? "Mentores confirmados deste evento: " + ev.mentores + ". Citar outro nome como palestrante é inventar dado (pos_sem_vetadas = false).\n" : "Os palestrantes do Summit não estão definidos neste treino: não cobre nomes, e não marque falha por eles.\n") + gabarito + `
+Turnos de fala da executiva nesta call: ` + numTurnos + `
+
+## 7. FORMATO DE SAÍDA
+Responda SOMENTE o JSON abaixo, sem markdown e sem texto fora dele. O objeto "checklist" precisa conter TODOS os itens da seção 5. NÃO devolva nota numérica em critério nenhum.
+{"sintese":"uma frase do líder sobre a ligação inteira",
+"criterios":{
+"rapport":{"feedback":"","trecho":"","proximo":"Na próxima: [frase exata]"},
+"gancho":{"feedback":"","trecho":"","proximo":""},
+"momento":{"feedback":"","trecho":"","proximo":""},
+"cavar":{"feedback":"","trecho":"","proximo":""},
+"visao":{"feedback":"","trecho":"","proximo":""},
+"desejo":{"feedback":"","trecho":"","proximo":""},
+"apresentacao":{"feedback":"","trecho":"","proximo":""},
+"escassez":{"feedback":"","trecho":"","proximo":""},
+"fechamento":{"feedback":"","trecho":"","proximo":""},
+"postura":{"feedback":"","trecho":"","proximo":""}},
+"prolixidade":{"detectada":false,"turno":"","observacao":"o que foi dito em excesso e o impacto","deveria_ter_dito":"uma frase"},
+"ponto_perda":{"houve":false,"turno":"","o_que_aconteceu":"1-2 frases","trecho":"","causa_raiz":"a falha específica","o_que_fazer":"uma ação concreta em segunda pessoa"},
+"script":{"checklist":{"nome_do_item":true},"observacao":"1-2 frases sobre o que mais custou aderência ao script"},
+"resumo_lider":"3 a 5 frases: padrão identificado, onde é forte, onde é fraco, e UM foco único e mensurável para a próxima ligação. Termine sempre com o foco."}
+
+## 8. CONVERSA
+` + transcript;
+
+  try {
+    const resposta = await callAPI([{ role: "user", content: evalPrompt }], "Avaliador da equipe de eventos. Responda apenas JSON válido e completo.", { temperature: 0, task: "avaliacao", max_tokens: 16000, comMeta: true });
+    const raw = resposta.texto;
+    const modeloAvaliador = resposta.modelo;
+    let cleaned = raw.replace(/```json|```/g, "").trim();
+
+    // Tenta parse direto
+    let result;
+    try {
+      result = JSON.parse(cleaned);
+    } catch(parseErr) {
+      // JSON truncado — tenta fechar o objeto
+      try {
+        // Fecha strings abertas, arrays e objeto
+        let fixed = cleaned;
+        // Conta chaves e colchetes abertos
+        let braces = 0, brackets = 0, inStr = false, escape = false;
+        for (let i = 0; i < fixed.length; i++) {
+          const c = fixed[i];
+          if (escape) { escape = false; continue; }
+          if (c === "\\" && inStr) { escape = true; continue; }
+          if (c === '"' && !escape) { inStr = !inStr; continue; }
+          if (inStr) continue;
+          if (c === "{") braces++;
+          else if (c === "}") braces--;
+          else if (c === "[") brackets++;
+          else if (c === "]") brackets--;
+        }
+        if (inStr) fixed += '"';
+        while (brackets > 0) { fixed += "]"; brackets--; }
+        while (braces > 0) { fixed += "}"; braces--; }
+        result = JSON.parse(fixed);
+      } catch(e2) {
+        // Avaliacao truncada e irrecuperavel — NAO inventa resultado nem salva nota
+        throw new Error("a avaliação voltou incompleta (call muito longa). Nada foi salvo — refaça com uma call mais curta.");
+      }
+    }
+
+    // So aceita avaliacao completa — meia avaliacao nao vira nota
+    const av = lerAvaliacao(result);
+    if (!av) {
+      throw new Error("a avaliação não veio completa (faltou critério ou % de script). Nada foi salvo — refaça a simulação.");
+    }
+    result._av = av;
+    // Escreve as notas calculadas de volta na avaliacao antes de salvar: o modelo
+    // nao devolve mais nota, e sem isso o historico grava a avaliacao sem elas.
+    for (const [k] of CRITERIOS) {
+      if (result.criterios[k]) result.criterios[k].nota = av.notas[k];
+    }
+
+    soltarTela();
+    renderScore(result); setStatus("Avaliação concluída!");
+    saveSimulationResult(result, av, transcript, modeloAvaliador);
+  } catch(e) {
+    soltarTela();
+    setStatus("Erro ao avaliar: " + e.message);
+    endBtn.removeAttribute("disabled"); sessionEnded = false;
+  }
+});
+
+// ── Salva resultado no histórico central ──
+// Fila local de envios pendentes. No celular a pagina e suspensa quando a tela
+// apaga ou o SDR troca de app, e o fetch do save morre junto — a nota sumia sem
+// ninguem saber. O payload fica guardado e sobe na proxima vez que a pagina abrir.
+const PENDENTES = "roleplay_pendentes";  // mesma fila do simulador de produto: o payload ja diz a regua
+
+function guardarPendente(payload) {
+  try {
+    const fila = JSON.parse(localStorage.getItem(PENDENTES) || "[]");
+    fila.push({ payload, em: Date.now() });
+    localStorage.setItem(PENDENTES, JSON.stringify(fila.slice(-10)));
+    return true;
+  } catch (e) { return false; }
+}
+
+async function enviarPendentes() {
+  let fila;
+  try { fila = JSON.parse(localStorage.getItem(PENDENTES) || "[]"); } catch (e) { return; }
+  if (!fila.length) return;
+  const sobraram = [];
+  for (const item of fila) {
+    try {
+      const r = await fetch(API_URL + "/save", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item.payload), keepalive: true,
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      console.info("Simulação pendente enviada:", new Date(item.em).toLocaleString("pt-BR"));
+    } catch (e) { sobraram.push(item); }
+  }
+  try { localStorage.setItem(PENDENTES, JSON.stringify(sobraram)); } catch (e) {}
+}
+
+async function saveSimulationResult(result, av, transcript, modeloAvaliador) {
+  const corpo = {
+    sdr_name: sdrName,
+    persona_name: persona.name,
+    persona_shop: persona.shop,
+    persona_city: persona.city,
+    level: persona.difficulty,
+    rubrica_versao: "eventos-v1/" + persona.evento,
+    modelo_avaliador: modeloAvaliador || null,
+    media_criterios: av.media,
+    script_pct: av.scriptPct,
+    avaliacao: result,
+    resumo_lider: result.resumo_lider || "",
+    veredicto: result.sintese || "",
+    transcript: transcript || "",
+  };
+  try {
+    const resp = await fetch(API_URL + "/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corpo),
+      keepalive: true,
+    });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+  } catch (e) {
+    console.error("Erro ao salvar histórico:", e);
+    const guardou = guardarPendente(corpo);
+    setStatus(guardou
+      ? "Avaliação concluída. O envio falhou e ficou guardado — abra esta página de novo com internet que ela sobe sozinha."
+      : "Avaliação concluída — mas NÃO foi salva no histórico. Avise o gestor.");
+  }
+}
+
+function renderScore(result) {
+  const av = result._av;
+  const crit = result.criterios || {};
+
+  // Sintese do lider
+  let html = '<div style="font-size:15px;font-style:italic;color:#aaa;margin-bottom:1.25rem;padding:0.75rem 1rem;background:#1a1a1a;border-radius:8px;border-left:3px solid #444">' +
+    '"' + esc(result.sintese) + '"</div>';
+
+  // Os dois numeros lado a lado: media dos criterios (0-5) e script seguido (0-100%)
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.5rem">' +
+    '<div style="background:#161616;border-radius:10px;padding:1rem;text-align:center">' +
+      '<div style="font-size:12px;color:#888;margin-bottom:6px">Aderência ao roteiro</div>' +
+      '<div style="font-size:38px;font-weight:500;line-height:1;color:' + corNota(av.media) + '">' + av.media +
+      '<span style="font-size:18px;color:#555">/5</span></div>' +
+    '</div>' +
+    '<div style="background:#161616;border-radius:10px;padding:1rem;text-align:center">' +
+      '<div style="font-size:12px;color:#888;margin-bottom:6px">Etapas cumpridas</div>' +
+      '<div style="font-size:38px;font-weight:500;line-height:1;color:' + corScript(av.scriptPct) + '">' + av.scriptPct +
+      '<span style="font-size:18px;color:#555">%</span></div>' +
+    '</div>' +
+    '</div>';
+
+  // Barras por criterio
+  html += '<div class="criteria" style="margin-bottom:1.5rem;">';
+  for (const [k, label] of CRITERIOS) {
+    const n = av.notas[k];
+    const col = corNota(n);
+    const larg = n === "NA" ? 0 : n * 20;
+    html += '<div class="crit-row">' +
+      '<span class="crit-label">' + label + '</span>' +
+      '<div class="bar-bg"><div class="bar-fg" style="width:' + larg + '%;background:' + col + '"></div></div>' +
+      '<span class="crit-val" style="color:' + col + '">' + (n === "NA" ? "NA" : n + "/5") + '</span>' +
+      '</div>';
+    const d = av.detalhe[k];
+    if (d && d.aplicaveis) {
+      html += '<div style="font-size:11px;color:#666;margin:-4px 0 6px 0">' +
+        d.feitos + ' de ' + d.aplicaveis + ' itens do roteiro</div>';
+    }
+  }
+  html += '</div>';
+
+  const trechoHtml = (rotulo, t) => t
+    ? '<div style="font-size:12px;color:#9ca3af;margin:6px 0;padding:6px 10px;background:#101010;border-radius:6px;border-left:2px solid #333">' +
+      esc(rotulo) + ' ' + esc(t) + '</div>'
+    : '';
+
+  // Feedback por criterio
+  html += '<div class="fb-block"><h4 style="margin-bottom:12px">📋 Feedback por etapa</h4></div>';
+  for (const [k, label] of CRITERIOS) {
+    const c = crit[k] || {};
+    const n = av.notas[k];
+    const col = corNota(n);
+    html += '<div style="margin-bottom:16px;padding:12px 14px;background:#161616;border-radius:10px;border-left:3px solid ' + col + '">' +
+      '<div style="font-size:13px;font-weight:500;color:#fff;margin-bottom:6px">' + label +
+        ' — <span style="color:' + col + '">' + (n === "NA" ? "NA" : n + "/5") + '</span>' +
+        (av.detalhe[k] && av.detalhe[k].aplicaveis
+          ? '<span style="color:#666;font-weight:400"> · ' + av.detalhe[k].feitos + '/' + av.detalhe[k].aplicaveis + ' itens</span>' : '') +
+        (av.detalhe[k] && av.detalhe[k].zeradoPorDesqualificacao
+          ? '<span style="color:#f87171;font-weight:400"> · zerado: agendou lead sem CNPJ</span>' : '') +
+        (av.detalhe[k] && av.detalhe[k].tetoPorImplicacao
+          ? '<span style="color:#f87171;font-weight:400"> · teto 2: fez pergunta de implicação</span>' : '') +
+        '</div>' +
+      '<div style="font-size:13px;color:#ccc;line-height:1.7;margin-bottom:8px">' + esc(c.feedback) + '</div>';
+
+    html += trechoHtml("💬", c.trecho);
+    if (k === "validar" && c.dados_faltantes && c.dados_faltantes.length) {
+      html += '<div style="font-size:12px;color:#f87171;margin:6px 0">Não validou: ' + esc(c.dados_faltantes.join(", ")) + '</div>';
+    }
+    if (k === "mapear" && c.implicacao_detectada) {
+      html += '<div style="font-size:12px;color:#f87171;margin:6px 0">🚫 Pergunta de implicação: "' + esc(c.implicacao_detectada) + '"</div>';
+    }
+    if (k === "proximo" && c.distancia_agendamento) {
+      const d = String(c.distancia_agendamento);
+      const ok = /^D[012]$|^NA$/i.test(d.trim());
+      html += '<div style="font-size:12px;color:' + (ok ? "#5cb85c" : "#f87171") + ';margin:6px 0">📅 Agendamento: ' + esc(d) + '</div>';
+    }
+    if (c.proximo) html += '<div style="font-size:13px;color:#5cb85c;margin-top:6px">🛠 ' + esc(c.proximo) + '</div>';
+    html += '</div>';
+  }
+
+  // Script seguido — o checklist inteiro, para o SDR ver exatamente o que faltou
+  const scr = result.script || {};
+  html += '<div class="fb-block" style="margin-top:12px;padding:1rem;background:#161616;border-radius:10px">' +
+    '<h4 style="margin-bottom:10px">📐 Roteiro seguido — <span style="color:' + corScript(av.scriptPct) + '">' + av.scriptPct + '%</span></h4>';
+  if (scr.observacao) {
+    html += '<p style="font-size:13px;color:#ccc;line-height:1.7;margin-bottom:12px">' + esc(scr.observacao) + '</p>';
+  }
+  for (const g of av.scriptGrupos) {
+    if (g.fracao === null) {
+      html += '<div style="font-size:12px;color:#555;margin-bottom:10px">' + esc(g.grupo) +
+        ' <span style="color:#444">— não se aplicou a esta ligação</span></div>';
+      continue;
+    }
+    const feitos = g.aplicaveis.filter(i => i[2]).length;
+    const col = g.fracao >= 0.8 ? "#5cb85c" : g.fracao >= 0.5 ? "#f5c518" : "#f87171";
+    html += '<div style="margin-bottom:12px">' +
+      '<div style="font-size:12px;color:#999;margin-bottom:5px;display:flex;justify-content:space-between;gap:8px">' +
+        '<span>' + esc(g.grupo) + '</span>' +
+        '<span style="color:' + col + '">' + feitos + '/' + g.aplicaveis.length + '</span>' +
+      '</div>';
+    for (const [, rotulo, ok] of g.aplicaveis) {
+      html += '<div style="font-size:12px;line-height:1.6;color:' + (ok ? "#7a7a7a" : "#e5e5e5") + '">' +
+        '<span style="color:' + (ok ? "#5cb85c" : "#f87171") + ';margin-right:6px">' + (ok ? "✓" : "✗") + '</span>' +
+        esc(rotulo) + '</div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // Prolixidade
+  const prol = result.prolixidade || {};
+  if (prol.detectada) {
+    html += '<div class="fb-block fb-danger" style="margin-top:12px"><h4>⚠️ Prolixidade detectada' +
+      (prol.turno ? ' — ' + esc(prol.turno) : "") + '</h4><p>' + esc(prol.observacao) + '</p>';
+    if (prol.deveria_ter_dito) html += '<p style="color:#5cb85c;margin-top:6px">🛠 ' + esc(prol.deveria_ter_dito) + '</p>';
+    html += '</div>';
+  }
+
+  // Ponto de perda da venda (REGRA 3)
+  const pp = result.ponto_perda || {};
+  if (pp.houve) {
+    html += '<div class="fb-block fb-danger" style="margin-top:12px"><h4>🚨 Ponto de perda da venda' +
+      (pp.turno ? ' — ' + esc(pp.turno) : "") + '</h4>' +
+      '<p>' + esc(pp.o_que_aconteceu) + '</p>';
+    if (pp.trecho) html += trechoHtml("💬", pp.trecho);
+    if (pp.causa_raiz) html += '<p style="margin-top:6px">📌 Causa raiz: ' + esc(pp.causa_raiz) + '</p>';
+    if (pp.o_que_fazer) html += '<p style="color:#5cb85c;margin-top:6px">🛠 ' + esc(pp.o_que_fazer) + '</p>';
+    html += '</div>';
+  }
+
+  // Resumo do lider
+  if (result.resumo_lider) {
+    html += '<div class="fb-block" style="margin-top:1.25rem;padding:1rem;background:#1a1a1a;border-radius:10px;border:0.5px solid #333">' +
+      '<h4 style="margin-bottom:8px">💬 Resumo do líder</h4>' +
+      '<p style="font-size:14px;line-height:1.75;color:#ccc">' + esc(result.resumo_lider) + '</p>' +
+      '</div>';
+  }
+
+  const meta = DIFF_META[persona.difficulty];
+  const sc = document.getElementById("scorecard");
+  sc.style.display = "block";
+  sc.innerHTML =
+    '<h3>Avaliação — '+persona.name+
+      ' <span style="font-size:11px;padding:2px 8px;border-radius:20px;background:'+meta.bg+';color:'+meta.color+';margin-left:6px">'+meta.label+'</span>'+
+    '</h3>' + html +
+    '<div class="score-actions">' +
+      '<button onclick="init()">↩ Repetir nível '+meta.label+'</button>' +
+      '<button onclick="goBack()">🎯 Escolher outro nível</button>' +
+    '</div>';
+  setTimeout(() => sc.scrollIntoView({ behavior:"smooth" }), 100);
+}
+
+
+async function init() {
+  speechSynthesis.cancel();
+  const effectiveLevel = selectedLevel === "aleatorio"
+    ? ["facil","medio","dificil"][Math.floor(Math.random()*3)]
+    : selectedLevel;
+  const pool = PERSONAS[effectiveLevel];
+  const base = pool[Math.floor(Math.random()*pool.length)];
+  const evento = selectedEvent === "aleatorio"
+    ? ["summit","ppb","cash"][Math.floor(Math.random()*3)]
+    : selectedEvent;
+  persona = { ...base, difficulty: effectiveLevel, evento };
+
+  history = []; turnCount = 0; sessionEnded = false; isProcessing = false; isListening = false;
+  chatWin.innerHTML = "";
+  micBtn.setAttribute("disabled",""); micIcon.textContent = "🎙️";
+  micBtn.className = ""; micBtn.id = "mic-btn";
+  endBtn.setAttribute("disabled","");
+  txPrev.textContent = "";
+  document.getElementById("scorecard").style.display = "none";
+  renderPersona(persona);
+  await loadVoices();
+  segurarTela();
+  getGreeting();
+}
+
+// Ao abrir: avisa se o aparelho não grava voz e sobe o que ficou pendente.
+checarAparelho();
+enviarPendentes();
+</script>
+</body>
+</html>
