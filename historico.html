@@ -48,12 +48,12 @@
   .score-mid { color: #f5c518; }
   .score-low { color: #f87171; }
 
-  #aviso-modelo {
+  #aviso-setor, #aviso-modelo {
     margin-bottom: 1.25rem; padding: 0.85rem 1rem; border-radius: 10px;
     background: #2a1f00; border: 0.5px solid #5a4a1a; color: #e8d9a8;
     font-size: 13px; line-height: 1.6;
   }
-  #aviso-modelo b { color: #f5c518; }
+  #aviso-setor b, #aviso-modelo b { color: #f5c518; }
   #por-etapa { margin-bottom: 1.5rem; }
   .etapas-titulo { font-size: 13px; color: #888; margin-bottom: 8px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
   .etapas-pior { font-size: 12px; color: #f87171; }
@@ -79,6 +79,11 @@
     <select id="sdr-filter" onchange="applyFilter()">
       <option value="">Todos os SDRs</option>
     </select>
+    <select id="setor-filter" onchange="applyFilter()">
+      <option value="">Todos os setores</option>
+      <option value="barbearia">Cash Barber</option>
+      <option value="eventos">Eventos</option>
+    </select>
     <select id="nivel-filter" onchange="applyFilter()">
       <option value="">Todos os níveis</option>
       <option value="facil">Fácil</option>
@@ -98,6 +103,7 @@
   </div>
 
   <div class="summary-cards" id="summary"></div>
+  <div id="aviso-setor" style="display:none"></div>
   <div id="aviso-modelo" style="display:none"></div>
   <div id="por-etapa" style="display:none"></div>
 
@@ -265,7 +271,7 @@ function populateSdrFilter() {
   preencher("persona-filter", "persona_name", "Todas as personas");
 }
 
-const FILTROS = ["sdr-filter", "nivel-filter", "persona-filter", "periodo-filter"];
+const FILTROS = ["setor-filter", "sdr-filter", "nivel-filter", "persona-filter", "periodo-filter"];
 const valor = id => document.getElementById(id).value;
 
 function limparFiltros() {
@@ -274,13 +280,14 @@ function limparFiltros() {
 }
 
 function applyFilter() {
-  const sdr = valor("sdr-filter"), nivel = valor("nivel-filter");
+  const setor = valor("setor-filter"), sdr = valor("sdr-filter"), nivel = valor("nivel-filter");
   const persona = valor("persona-filter"), dias = Number(valor("periodo-filter"));
   // created_at vem em UTC; o corte por dias é sobre o instante, não sobre a data,
   // então não precisa converter para BRT aqui.
   const limite = dias ? Date.now() - dias * 864e5 : null;
 
   const rows = allResults.filter(r =>
+    (!setor || (r.setor || "barbearia") === setor) &&
     (!sdr || chaveSdr(r.sdr_name) === sdr) &&
     (!nivel || r.level === nivel) &&
     (!persona || r.persona_name === persona) &&
@@ -323,6 +330,17 @@ function render(rows) {
   const porEtapa = ETAPAS.map(e => ({ e, m: mediaEtapa(rows, e) })).filter(x => x.m !== null);
   // Nota de modelos diferentes nao se compara. Sem este aviso o painel mostra um
   // degrau que parece evolucao do time e e so troca de avaliador.
+  const setores = [...new Set(rows.map(r => r.setor || "barbearia"))];
+  const setorEl = document.getElementById("aviso-setor");
+  if (setores.length > 1) {
+    setorEl.innerHTML = "⚠️ Estão misturados <b>dois simuladores</b> (Cash Barber e Eventos). " +
+      "As etapas são réguas diferentes — 7 do script 3C contra 9 do script de eventos — então as colunas por etapa " +
+      "e a aderência média <b>não se comparam</b>. Filtre por setor.";
+    setorEl.style.display = "block";
+  } else {
+    setorEl.style.display = "none";
+  }
+
   const modelos = [...new Set(rows.map(r => r.modelo_avaliador || "desconhecido"))];
   const avisoEl = document.getElementById("aviso-modelo");
   if (modelos.length > 1) {
